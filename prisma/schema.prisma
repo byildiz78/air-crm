@@ -1,0 +1,302 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(CLIENT)
+  password      String?
+  restaurant    Restaurant? @relation(fields: [restaurantId], references: [id])
+  restaurantId  String?
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Restaurant {
+  id            String    @id @default(cuid())
+  name          String
+  address       String?
+  phone         String?
+  logo          String?
+  staff         User[]
+  customers     Customer[]
+  segments      Segment[]
+  campaigns     Campaign[]
+  products      Product[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Customer {
+  id            String    @id @default(cuid())
+  name          String
+  email         String
+  phone         String?
+  birthDate     DateTime?
+  points        Int       @default(0)
+  level         CustomerLevel @default(REGULAR)
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurantId  String
+  segments      CustomerSegment[]
+  transactions  Transaction[]
+  rewards       CustomerReward[]
+  campaignUsages CampaignUsage[]
+  pushToken     String?
+  lastVisit     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Segment {
+  id            String    @id @default(cuid())
+  name          String
+  description   String?
+  rules         String?   // JSON string for segment rules
+  isAutomatic   Boolean   @default(false)
+  criteria      String?   // JSON string for automatic criteria
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurantId  String
+  customers     CustomerSegment[]
+  campaigns     Campaign[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([name, restaurantId])
+}
+
+model CustomerSegment {
+  customer      Customer  @relation(fields: [customerId], references: [id])
+  customerId    String
+  segment       Segment   @relation(fields: [segmentId], references: [id])
+  segmentId     String
+  addedAt       DateTime  @default(now())
+
+  @@id([customerId, segmentId])
+}
+
+model Campaign {
+  id            String    @id @default(cuid())
+  name          String
+  description   String
+  type          CampaignType @default(DISCOUNT)
+  startDate     DateTime
+  endDate       DateTime
+  isActive      Boolean   @default(true)
+  
+  // Discount settings
+  discountType  DiscountType
+  discountValue Float
+  minPurchase   Float?
+  maxUsage      Int?
+  maxUsagePerCustomer Int? @default(1)
+  
+  // Time-based settings
+  validHours    String?   // JSON: {"start": "14:00", "end": "17:00"}
+  validDays     String?   // JSON: [1,2,3,4,5] (Monday=1, Sunday=7)
+  
+  // Product-based settings
+  targetProducts String?  // JSON: ["product_id1", "product_id2"]
+  freeProducts   String?  // JSON: ["product_id1"]
+  
+  // Points settings
+  pointsMultiplier Float? @default(1)
+  pointsRequired   Int?
+  
+  // Notification settings
+  sendNotification Boolean @default(true)
+  notificationTitle String?
+  notificationMessage String?
+  
+  segments      Segment[]
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurantId  String
+  rewards       Reward[]
+  usages        CampaignUsage[]
+  transactions  TransactionCampaign[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model CampaignUsage {
+  id            String    @id @default(cuid())
+  campaign      Campaign  @relation(fields: [campaignId], references: [id])
+  campaignId    String
+  customer      Customer  @relation(fields: [customerId], references: [id])
+  customerId    String
+  usedAt        DateTime  @default(now())
+  orderAmount   Float
+  discountAmount Float
+}
+
+model Reward {
+  id            String    @id @default(cuid())
+  name          String
+  description   String
+  pointsCost    Int?
+  campaign      Campaign? @relation(fields: [campaignId], references: [id])
+  campaignId    String?
+  customers     CustomerReward[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model CustomerReward {
+  id            String    @id @default(cuid())
+  customer      Customer  @relation(fields: [customerId], references: [id])
+  customerId    String
+  reward        Reward    @relation(fields: [rewardId], references: [id])
+  rewardId      String
+  isRedeemed    Boolean   @default(false)
+  redeemedAt    DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+}
+
+enum CampaignType {
+  DISCOUNT
+  PRODUCT_BASED
+  LOYALTY_POINTS
+  TIME_BASED
+  BIRTHDAY_SPECIAL
+  COMBO_DEAL
+}
+
+model Transaction {
+  id            String    @id @default(cuid())
+  orderNumber   String    @unique
+  totalAmount   Float
+  discountAmount Float   @default(0)
+  finalAmount   Float
+  pointsEarned  Int       @default(0)
+  pointsUsed    Int       @default(0)
+  paymentMethod String?   // CASH, CARD, MOBILE, etc.
+  status        TransactionStatus @default(COMPLETED)
+  notes         String?
+  customer      Customer  @relation(fields: [customerId], references: [id])
+  customerId    String
+  items         TransactionItem[]
+  appliedCampaigns TransactionCampaign[]
+  transactionDate DateTime @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model TransactionItem {
+  id            String    @id @default(cuid())
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId String
+  productId     String
+  productName   String
+  category      String?
+  quantity      Int
+  unitPrice     Float
+  totalPrice    Float
+  discountAmount Float   @default(0)
+  isFree        Boolean   @default(false)
+  notes         String?
+  createdAt     DateTime  @default(now())
+}
+
+model TransactionCampaign {
+  id            String    @id @default(cuid())
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId String
+  campaign      Campaign  @relation(fields: [campaignId], references: [id])
+  campaignId    String
+  discountAmount Float
+  freeItems     String?   // JSON array of free item IDs
+  pointsEarned  Int       @default(0)
+  appliedAt     DateTime  @default(now())
+}
+
+model Product {
+  id            String    @id @default(cuid())
+  name          String
+  description   String?
+  category      String
+  price         Float
+  isActive      Boolean   @default(true)
+  restaurant    Restaurant @relation(fields: [restaurantId], references: [id])
+  restaurantId  String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([name, restaurantId])
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+enum Role {
+  ADMIN
+  RESTAURANT_ADMIN
+  STAFF
+  CLIENT
+}
+
+enum CustomerLevel {
+  REGULAR
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_ITEM
+  BUY_ONE_GET_ONE
+}
