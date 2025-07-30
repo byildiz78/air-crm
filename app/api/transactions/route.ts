@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { rewardEvents } from '@/lib/events/reward.events'
 import { queueSegmentUpdate } from '@/lib/segment-queue'
 import { tierService } from '@/lib/services/tier.service'
+import { authenticateRequest } from '@/lib/auth-utils'
 
 const transactionItemSchema = z.object({
   productId: z.string(),
@@ -39,9 +40,12 @@ const transactionSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const auth = await authenticateRequest(request)
+    if (!auth.isAuthenticated) {
+      return NextResponse.json({ 
+        error: 'Unauthorized', 
+        message: 'Valid session or Bearer token required' 
+      }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -139,11 +143,13 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // TEMPORARY: Skip auth for testing
-    // const session = await getServerSession(authOptions)
-    // if (!session) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    // }
+    const auth = await authenticateRequest(request)
+    if (!auth.isAuthenticated) {
+      return NextResponse.json({ 
+        error: 'Unauthorized', 
+        message: 'Valid session or Bearer token required' 
+      }, { status: 401 })
+    }
 
     const body = await request.json()
     const validatedData = transactionSchema.parse(body)

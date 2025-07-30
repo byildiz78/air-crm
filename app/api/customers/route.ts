@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { assignCustomerToAutomaticSegments } from '@/lib/segment-auto-assign'
+import { authenticateRequest } from '@/lib/auth-utils'
 
 const customerSchema = z.object({
   name: z.string().min(2, 'İsim en az 2 karakter olmalıdır'),
@@ -15,9 +16,12 @@ const customerSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const auth = await authenticateRequest(request)
+    if (!auth.isAuthenticated) {
+      return NextResponse.json({ 
+        error: 'Unauthorized', 
+        message: 'Valid session or Bearer token required' 
+      }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -87,9 +91,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const auth = await authenticateRequest(request)
+    if (!auth.isAuthenticated) {
+      return NextResponse.json({ 
+        error: 'Unauthorized', 
+        message: 'Valid session or Bearer token required' 
+      }, { status: 401 })
     }
 
     const body = await request.json()

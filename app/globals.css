@@ -80,3 +80,91 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Swagger UI Customizations */
+.api-docs .swagger-ui {
+  font-family: inherit;
+}
+
+.api-docs .swagger-ui .topbar {
+  display: none;
+}
+
+.api-docs .swagger-ui .info {
+  margin: 20px 0;
+}
+
+.api-docs .swagger-ui .scheme-container {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 10px;
+  margin: 20px 0;
+  border-radius: 8px;
+}
+
+.api-docs .swagger-ui .auth-wrapper {
+  padding: 20px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.api-docs .swagger-ui .authorization__btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.api-docs .swagger-ui .authorization__btn:hover {
+  background: #2563eb;
+}
+
+.api-docs .swagger-ui .opblock.opblock-get {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.api-docs .swagger-ui .opblock.opblock-post {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.api-docs .swagger-ui .opblock.opblock-put {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.api-docs .swagger-ui .opblock.opblock-delete {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.api-docs .swagger-ui .opblock-summary-method {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.api-docs .swagger-ui .btn.authorize {
+  background: #16a34a;
+  color: white;
+  border: none;
+}
+
+.api-docs .swagger-ui .btn.authorize:hover {
+  background: #15803d;
+}
+
+.api-docs .swagger-ui .modal-ux {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.api-docs .swagger-ui .modal-ux-content {
+  border-radius: 8px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
