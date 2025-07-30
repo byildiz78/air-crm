@@ -2,7 +2,7 @@ import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from './prisma'
-import bcrypt from 'bcryptjs'
+import * as bcrypt from 'bcryptjs'
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -14,7 +14,10 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
+        console.log('Authorize called with:', credentials?.email)
+        
         if (!credentials?.email || !credentials?.password) {
+          console.log('Missing credentials')
           return null
         }
 
@@ -23,8 +26,11 @@ export const authOptions: NextAuthOptions = {
             email: credentials.email
           }
         })
+        
+        console.log('User found:', user?.email, 'Has password:', !!user?.password)
 
         if (!user || !user.password) {
+          console.log('User not found or no password')
           return null
         }
 
@@ -32,6 +38,8 @@ export const authOptions: NextAuthOptions = {
           credentials.password,
           user.password
         )
+        
+        console.log('Password valid:', isPasswordValid)
 
         if (!isPasswordValid) {
           return null

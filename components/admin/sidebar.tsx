@@ -13,7 +13,10 @@ import {
   Settings,
   LogOut,
   Bell,
-  Receipt
+  Receipt,
+  Package,
+  TrendingUp,
+  Crown
 } from 'lucide-react'
 
 const navigation = [
@@ -27,6 +30,12 @@ const navigation = [
     href: '/admin/customers', 
     icon: Users
   },
+  
+  { 
+    name: 'Seviye Yönetimi', 
+    href: '/admin/tiers', 
+    icon: Crown
+  },
   { 
     name: 'Segmentler', 
     href: '/admin/segments', 
@@ -36,11 +45,21 @@ const navigation = [
     name: 'Kampanyalar', 
     href: '/admin/campaigns', 
     icon: Megaphone
-  }
+  },
+  { 
+    name: 'Ürün Yönetimi', 
+    href: '/admin/products', 
+    icon: Package
+  },
   { 
     name: 'Satış Kayıtları', 
     href: '/admin/transactions', 
     icon: Receipt
+  },
+  { 
+    name: 'Para Puan Hareketleri', 
+    href: '/admin/point-transactions', 
+    icon: TrendingUp
   }
 ]
 

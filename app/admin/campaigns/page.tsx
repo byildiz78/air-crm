@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { CampaignTable } from '@/components/admin/campaigns/campaign-table'
-import { CampaignForm } from '@/components/admin/campaigns/campaign-form'
+import { SimpleCampaignModal } from '@/components/admin/campaigns/SimpleCampaignModal'
 import { Plus, Megaphone, TrendingUp, Users, BarChart3, Search, Filter } from 'lucide-react'
 import { Campaign } from '@prisma/client'
 import { toast } from 'sonner'
@@ -45,8 +45,8 @@ export default function CampaignsPage() {
   
   // Filters
   const [searchValue, setSearchValue] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
+  const [typeFilter, setTypeFilter] = useState('ALL')
+  const [statusFilter, setStatusFilter] = useState('ALL')
   const [currentPage, setCurrentPage] = useState(1)
 
   const fetchCampaigns = async () => {
@@ -123,13 +123,19 @@ export default function CampaignsPage() {
 
     try {
       setFormLoading(true)
+      console.log('Updating campaign with data:', data)
+      
       const response = await fetch(`/api/campaigns/${editingCampaign.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       })
 
-      if (!response.ok) throw new Error('Failed to update campaign')
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('API Error Response:', errorData)
+        throw new Error(`Failed to update campaign: ${errorData.message || response.statusText}`)
+      }
       
       toast.success('Kampanya başarıyla güncellendi')
       setFormOpen(false)
@@ -237,7 +243,10 @@ export default function CampaignsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Kampanya Yönetimi</h1>
           <p className="text-gray-600">Müşterilerinize özel kampanyalar oluşturun ve yönetin</p>
         </div>
-        <Button onClick={() => setFormOpen(true)}>
+        <Button onClick={() => {
+          setEditingCampaign(null) // Önce null yap
+          setFormOpen(true)
+        }}>
           <Plus className="mr-2 h-4 w-4" />
           Yeni Kampanya
         </Button>
@@ -283,13 +292,16 @@ export default function CampaignsPage() {
                 <SelectValue placeholder="Tür filtrele" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tüm Türler</SelectItem>
+                <SelectItem value="ALL">Tüm Türler</SelectItem>
                 <SelectItem value="DISCOUNT">İndirim</SelectItem>
                 <SelectItem value="PRODUCT_BASED">Ürün Bazlı</SelectItem>
+                <SelectItem value="CATEGORY_DISCOUNT">Kategori İndirimi</SelectItem>
+                <SelectItem value="BUY_X_GET_Y">X Al Y Bedava</SelectItem>
+                <SelectItem value="COMBO_DEAL">Kombo Fırsat</SelectItem>
+                <SelectItem value="REWARD_CAMPAIGN">Ödül Kampanyası</SelectItem>
                 <SelectItem value="LOYALTY_POINTS">Sadakat Puanı</SelectItem>
                 <SelectItem value="TIME_BASED">Zaman Bazlı</SelectItem>
                 <SelectItem value="BIRTHDAY_SPECIAL">Doğum Günü</SelectItem>
-                <SelectItem value="COMBO_DEAL">Combo</SelectItem>
               </SelectContent>
             </Select>
 
@@ -298,7 +310,7 @@ export default function CampaignsPage() {
                 <SelectValue placeholder="Durum" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tümü</SelectItem>
+                <SelectItem value="ALL">Tümü</SelectItem>
                 <SelectItem value="active">Aktif</SelectItem>
                 <SelectItem value="inactive">Pasif</SelectItem>
               </SelectContent>
@@ -334,8 +346,8 @@ export default function CampaignsPage() {
         </CardContent>
       </Card>
 
-      {/* Campaign Form Dialog */}
-      <CampaignForm
+      {/* Campaign Form Modal */}
+      <SimpleCampaignModal
         open={formOpen}
         onOpenChange={(open) => {
           setFormOpen(open)

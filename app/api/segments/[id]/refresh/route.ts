@@ -45,7 +45,7 @@ export async function POST(
       include: {
         transactions: {
           select: {
-            amount: true,
+            totalAmount: true,
             transactionDate: true
           }
         }
@@ -64,7 +64,7 @@ export async function POST(
       // Filter transactions by period
       const filteredTransactions = filterTransactionsByPeriod(
         customer.transactions.map(t => ({
-          amount: Number(t.amount),
+          amount: Number(t.totalAmount),
           transactionDate: t.transactionDate
         })),
         criteria.period

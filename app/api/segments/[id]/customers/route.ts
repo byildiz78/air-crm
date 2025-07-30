@@ -8,6 +8,47 @@ const addCustomersSchema = z.object({
   customerIds: z.array(z.string())
 })
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Get customers in this segment
+    const customerSegments = await prisma.customerSegment.findMany({
+      where: {
+        segmentId: params.id
+      },
+      include: {
+        customer: {
+          include: {
+            _count: {
+              select: { transactions: true }
+            }
+          }
+        }
+      },
+      orderBy: {
+        addedAt: 'desc'
+      }
+    })
+
+    const customers = customerSegments.map(cs => ({
+      ...cs.customer,
+      addedAt: cs.addedAt
+    }))
+
+    return NextResponse.json({ customers })
+  } catch (error) {
+    console.error('Error fetching segment customers:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }

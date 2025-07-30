@@ -7,7 +7,7 @@ import { z } from 'zod'
 const campaignSchema = z.object({
   name: z.string().min(2, 'Kampanya adı en az 2 karakter olmalıdır'),
   description: z.string().min(10, 'Açıklama en az 10 karakter olmalıdır'),
-  type: z.enum(['DISCOUNT', 'PRODUCT_BASED', 'LOYALTY_POINTS', 'TIME_BASED', 'BIRTHDAY_SPECIAL', 'COMBO_DEAL']),
+  type: z.enum(['DISCOUNT', 'PRODUCT_BASED', 'LOYALTY_POINTS', 'TIME_BASED', 'BIRTHDAY_SPECIAL', 'COMBO_DEAL', 'BUY_X_GET_Y', 'CATEGORY_DISCOUNT', 'REWARD_CAMPAIGN']),
   startDate: z.string(),
   endDate: z.string(),
   discountType: z.enum(['PERCENTAGE', 'FIXED_AMOUNT', 'FREE_ITEM', 'BUY_ONE_GET_ONE']),
@@ -17,8 +17,24 @@ const campaignSchema = z.object({
   maxUsagePerCustomer: z.number().default(1),
   validHours: z.string().optional(),
   validDays: z.string().optional(),
+  
+  // Product/Category settings
   targetProducts: z.string().optional(),
+  targetCategories: z.string().optional(),
   freeProducts: z.string().optional(),
+  freeCategories: z.string().optional(),
+  
+  // Buy-X-Get-Y settings
+  buyQuantity: z.number().optional(),
+  getQuantity: z.number().optional(),
+  buyFromCategory: z.string().optional(),
+  getFromCategory: z.string().optional(),
+  getSpecificProduct: z.string().optional(),
+  
+  // Reward integration
+  rewardIds: z.string().optional(),
+  autoGiveReward: z.boolean().default(false),
+  
   pointsMultiplier: z.number().default(1),
   pointsRequired: z.number().optional(),
   sendNotification: z.boolean().default(true),
@@ -68,7 +84,7 @@ export async function GET(request: NextRequest) {
             select: { name: true }
           },
           segments: {
-            select: { name: true }
+            select: { id: true, name: true }
           },
           _count: {
             select: { usages: true }

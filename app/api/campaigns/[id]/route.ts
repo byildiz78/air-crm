@@ -7,7 +7,7 @@ import { z } from 'zod'
 const updateCampaignSchema = z.object({
   name: z.string().min(2).optional(),
   description: z.string().min(10).optional(),
-  type: z.enum(['DISCOUNT', 'PRODUCT_BASED', 'LOYALTY_POINTS', 'TIME_BASED', 'BIRTHDAY_SPECIAL', 'COMBO_DEAL']).optional(),
+  type: z.enum(['DISCOUNT', 'PRODUCT_BASED', 'LOYALTY_POINTS', 'TIME_BASED', 'BIRTHDAY_SPECIAL', 'COMBO_DEAL', 'BUY_X_GET_Y', 'CATEGORY_DISCOUNT', 'REWARD_CAMPAIGN']).optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   discountType: z.enum(['PERCENTAGE', 'FIXED_AMOUNT', 'FREE_ITEM', 'BUY_ONE_GET_ONE']).optional(),
@@ -15,10 +15,19 @@ const updateCampaignSchema = z.object({
   minPurchase: z.number().optional(),
   maxUsage: z.number().optional(),
   maxUsagePerCustomer: z.number().optional(),
-  validHours: z.string().optional(),
-  validDays: z.string().optional(),
-  targetProducts: z.string().optional(),
-  freeProducts: z.string().optional(),
+  validHours: z.string().nullable().optional(),
+  validDays: z.string().nullable().optional(),
+  targetProducts: z.string().nullable().optional(),
+  targetCategories: z.string().nullable().optional(),
+  freeProducts: z.string().nullable().optional(),
+  freeCategories: z.string().nullable().optional(),
+  buyQuantity: z.number().optional(),
+  getQuantity: z.number().optional(),
+  buyFromCategory: z.string().nullable().optional(),
+  getFromCategory: z.string().nullable().optional(),
+  getSpecificProduct: z.string().nullable().optional(),
+  rewardIds: z.string().nullable().optional(),
+  autoGiveReward: z.boolean().optional(),
   pointsMultiplier: z.number().optional(),
   pointsRequired: z.number().optional(),
   sendNotification: z.boolean().optional(),
@@ -84,7 +93,11 @@ export async function PUT(
     }
 
     const body = await request.json()
+    console.log('Campaign update request body:', JSON.stringify(body, null, 2))
+    
     const { segmentIds, ...updateData } = updateCampaignSchema.parse(body)
+    console.log('Parsed update data:', JSON.stringify(updateData, null, 2))
+    console.log('Segment IDs:', segmentIds)
 
     const campaign = await prisma.campaign.update({
       where: { id: params.id },
@@ -112,7 +125,12 @@ export async function PUT(
     return NextResponse.json(campaign)
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 })
+      console.error('Zod validation error:', error.errors)
+      return NextResponse.json({ 
+        error: 'Validation failed', 
+        details: error.errors,
+        message: 'Request data validation failed'
+      }, { status: 400 })
     }
     console.error('Error updating campaign:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

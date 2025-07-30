@@ -7,7 +7,9 @@ import { z } from 'zod'
 const updateSegmentSchema = z.object({
   name: z.string().min(2).optional(),
   description: z.string().optional(),
-  rules: z.string().optional()
+  rules: z.string().optional(),
+  isAutomatic: z.boolean().optional(),
+  criteria: z.string().optional()
 })
 
 export async function GET(

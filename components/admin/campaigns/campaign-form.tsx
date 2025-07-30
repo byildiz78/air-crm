@@ -97,8 +97,8 @@ export function CampaignForm({ open, onOpenChange, campaign, onSubmit, isLoading
     defaultValues: {
       name: campaign?.name || '',
       description: campaign?.description || '',
-      type: campaign?.type || '',
-      discountType: campaign?.discountType || '',
+      type: campaign?.type || 'DISCOUNT',
+      discountType: campaign?.discountType || 'PERCENTAGE',
       discountValue: campaign?.discountValue || 0,
       maxUsagePerCustomer: campaign?.maxUsagePerCustomer || 1,
       pointsMultiplier: campaign?.pointsMultiplier || 1,

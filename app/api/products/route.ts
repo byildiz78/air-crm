@@ -8,8 +8,8 @@ const productSchema = z.object({
   name: z.string().min(2, 'Ürün adı en az 2 karakter olmalıdır'),
   description: z.string().optional(),
   category: z.string().min(1, 'Kategori seçilmelidir'),
-  price: z.number().min(0, 'Fiyat 0 veya daha büyük olmalıdır'),
-  restaurantId: z.string()
+  price: z.number().min(0.01, 'Fiyat 0\'dan büyük olmalıdır'),
+  isActive: z.boolean().default(true)
 })
 
 export async function GET(request: NextRequest) {
@@ -21,24 +21,33 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
-    const search = searchParams.get('search') || ''
-    const category = searchParams.get('category') || ''
-    const isActive = searchParams.get('isActive')
+    const limit = parseInt(searchParams.get('limit') || '12')
+    const search = searchParams.get('search')
+    const category = searchParams.get('category')
+    const status = searchParams.get('status')
 
     const skip = (page - 1) * limit
 
-    const where: any = {
-      AND: [
-        search ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' as const } },
-            { description: { contains: search, mode: 'insensitive' as const } }
-          ]
-        } : {},
-        category ? { category } : {},
-        isActive !== null ? { isActive: isActive === 'true' } : {}
+    const where: any = {}
+
+    // Filter by restaurant if user is not admin
+    if (session.user.role !== 'ADMIN') {
+      where.restaurantId = session.user.restaurantId
+    }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } }
       ]
+    }
+
+    if (category && category !== 'ALL') {
+      where.category = category
+    }
+
+    if (status && status !== 'ALL') {
+      where.isActive = status === 'ACTIVE'
     }
 
     const [products, total] = await Promise.all([
@@ -51,7 +60,7 @@ export async function GET(request: NextRequest) {
             select: { name: true }
           }
         },
-        orderBy: { name: 'asc' }
+        orderBy: { createdAt: 'desc' }
       }),
       prisma.product.count({ where })
     ])
@@ -62,7 +71,7 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit)
+        totalPages: Math.ceil(total / limit)
       }
     })
   } catch (error) {
@@ -78,11 +87,59 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Only admins and restaurant staff can create products
+    if (!['ADMIN', 'RESTAURANT_ADMIN', 'STAFF'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const body = await request.json()
-    const validatedData = productSchema.parse(body)
+    const { name, description, category, price, isActive } = body
+
+    // Validate required fields
+    if (!name || !category || price === undefined) {
+      return NextResponse.json({ 
+        error: 'Name, category, and price are required' 
+      }, { status: 400 })
+    }
+
+    // Determine restaurant ID
+    let restaurantId = session.user.restaurantId
+    
+    // If admin, they need to specify restaurant or have a default one
+    if (session.user.role === 'ADMIN' && !restaurantId) {
+      // For demo purposes, get the first restaurant
+      const firstRestaurant = await prisma.restaurant.findFirst()
+      if (!firstRestaurant) {
+        return NextResponse.json({ 
+          error: 'No restaurant found' 
+        }, { status: 400 })
+      }
+      restaurantId = firstRestaurant.id
+    }
+
+    // Check if product with same name exists in the restaurant
+    const existingProduct = await prisma.product.findFirst({
+      where: { 
+        name,
+        restaurantId 
+      }
+    })
+
+    if (existingProduct) {
+      return NextResponse.json({ 
+        error: 'Bu restoranda aynı isimde bir ürün zaten mevcut' 
+      }, { status: 400 })
+    }
 
     const product = await prisma.product.create({
-      data: validatedData,
+      data: {
+        name,
+        description: description || null,
+        category,
+        price: parseFloat(price),
+        isActive: isActive !== false, // Default to true
+        restaurantId
+      },
       include: {
         restaurant: {
           select: { name: true }
@@ -90,11 +147,8 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(product, { status: 201 })
+    return NextResponse.json({ product }, { status: 201 })
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 })
-    }
     console.error('Error creating product:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

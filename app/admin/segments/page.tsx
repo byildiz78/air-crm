@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { SegmentTable } from '@/components/admin/segments/segment-table'
+import { EnhancedSegmentsView } from '@/components/admin/segments/enhanced-segments-view'
 import { SegmentForm } from '@/components/admin/segments/segment-form'
 import { CustomerSelector } from '@/components/admin/segments/customer-selector'
-import { Plus, Target, Users, TrendingUp, Search } from 'lucide-react'
+import { SegmentDetailModal } from '@/components/admin/segments/segment-detail-modal'
+import { Plus, Target, Users, TrendingUp, Search, RefreshCw } from 'lucide-react'
 import { Segment } from '@prisma/client'
 import { toast } from 'sonner'
 
@@ -18,6 +19,8 @@ interface SegmentWithDetails extends Segment {
 
 interface SegmentStats {
   total: number
+  automatic: number
+  manual: number
   totalCustomers: number
   averageSize: number
 }
@@ -26,6 +29,8 @@ export default function SegmentsPage() {
   const [segments, setSegments] = useState<SegmentWithDetails[]>([])
   const [stats, setStats] = useState<SegmentStats>({
     total: 0,
+    automatic: 0,
+    manual: 0,
     totalCustomers: 0,
     averageSize: 0
   })
@@ -37,6 +42,7 @@ export default function SegmentsPage() {
   const [formLoading, setFormLoading] = useState(false)
   const [searchValue, setSearchValue] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [detailModalOpen, setDetailModalOpen] = useState(false)
 
   const fetchSegments = async () => {
     try {
@@ -57,8 +63,13 @@ export default function SegmentsPage() {
       const totalCustomers = data.segments.reduce(
         (sum: number, s: SegmentWithDetails) => sum + s._count.customers, 0
       )
+      const automaticCount = data.segments.filter((s: SegmentWithDetails) => s.isAutomatic).length
+      const manualCount = data.segments.length - automaticCount
+      
       setStats({
         total: data.pagination.total,
+        automatic: automaticCount,
+        manual: manualCount,
         totalCustomers,
         averageSize: data.segments.length > 0 ? Math.round(totalCustomers / data.segments.length) : 0
       })
@@ -101,13 +112,18 @@ export default function SegmentsPage() {
 
     try {
       setFormLoading(true)
+      
       const response = await fetch(`/api/segments/${editingSegment.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       })
-
-      if (!response.ok) throw new Error('Failed to update segment')
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Update error response:', errorData)
+        throw new Error('Failed to update segment')
+      }
       
       toast.success('Segment başarıyla güncellendi')
       setFormOpen(false)
@@ -145,8 +161,8 @@ export default function SegmentsPage() {
   }
 
   const handleView = (segment: SegmentWithDetails) => {
-    // TODO: Implement segment detail view
-    console.log('View segment:', segment)
+    setSelectedSegment(segment)
+    setDetailModalOpen(true)
   }
 
   const handleManageCustomers = (segment: SegmentWithDetails) => {
@@ -173,9 +189,10 @@ export default function SegmentsPage() {
     }
   }
   const handleAddCustomers = async (customerIds: string[]) => {
-    if (!selectedSegment) return
+    if (!selectedSegment || formLoading) return
 
     try {
+      setFormLoading(true)
       const response = await fetch(`/api/segments/${selectedSegment.id}/customers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -190,6 +207,8 @@ export default function SegmentsPage() {
     } catch (error) {
       console.error('Error adding customers:', error)
       toast.error('Müşteriler eklenirken hata oluştu')
+    } finally {
+      setFormLoading(false)
     }
   }
 
@@ -197,6 +216,49 @@ export default function SegmentsPage() {
     e.preventDefault()
     setCurrentPage(1)
     fetchSegments()
+  }
+
+  const handleRefreshAllSegments = async () => {
+    try {
+      setFormLoading(true)
+      toast.info('Tüm segmentler yenileniyor...')
+      
+      // Get all automatic segments
+      const automaticSegments = segments.filter(s => s.isAutomatic)
+      let successCount = 0
+      let errorCount = 0
+      
+      for (const segment of automaticSegments) {
+        try {
+          const response = await fetch(`/api/segments/${segment.id}/refresh`, {
+            method: 'POST'
+          })
+          
+          if (response.ok) {
+            successCount++
+          } else {
+            errorCount++
+          }
+        } catch (error) {
+          errorCount++
+        }
+      }
+      
+      if (successCount > 0 && errorCount === 0) {
+        toast.success(`${successCount} segment başarıyla yenilendi`)
+      } else if (successCount > 0 && errorCount > 0) {
+        toast.warning(`${successCount} segment yenilendi, ${errorCount} segment başarısız`)
+      } else {
+        toast.error('Segmentler yenilenirken hata oluştu')
+      }
+      
+      fetchSegments()
+    } catch (error) {
+      console.error('Error refreshing all segments:', error)
+      toast.error('Segmentler yenilenirken hata oluştu')
+    } finally {
+      setFormLoading(false)
+    }
   }
 
   const statsCards = [
@@ -239,69 +301,20 @@ export default function SegmentsPage() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {statsCards.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                {stat.title}
-              </CardTitle>
-              <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-              <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Search */}
-      <Card>
-        <CardContent className="pt-6">
-          <form onSubmit={handleSearch} className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Segment adı veya açıklama ile ara..."
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Button type="submit">Ara</Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Segment Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Segment Listesi</CardTitle>
-          <CardDescription>
-            Tüm müşteri segmentlerini görüntüleyin ve yönetin
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
-            </div>
-          ) : (
-            <SegmentTable
-              segments={segments}
-              onEdit={handleEdit}
-              onDelete={handleDeleteSegment}
-              onView={handleView}
-              onManageCustomers={handleManageCustomers}
-              onRefreshSegment={handleRefreshSegment}
-            />
-          )}
-        </CardContent>
-      </Card>
+      {/* Enhanced Segments View */}
+      <EnhancedSegmentsView
+        segments={segments}
+        stats={stats}
+        loading={loading}
+        onEdit={handleEdit}
+        onDelete={handleDeleteSegment}
+        onView={handleView}
+        onManageCustomers={handleManageCustomers}
+        onRefresh={handleRefreshSegment}
+        onRefreshAll={handleRefreshAllSegments}
+        searchValue={searchValue}
+        onSearchChange={setSearchValue}
+      />
 
       {/* Segment Form Dialog */}
       <SegmentForm
@@ -322,6 +335,13 @@ export default function SegmentsPage() {
         segmentId={selectedSegment?.id || ''}
         onAddCustomers={handleAddCustomers}
         isLoading={formLoading}
+      />
+
+      {/* Segment Detail Modal */}
+      <SegmentDetailModal
+        open={detailModalOpen}
+        onOpenChange={setDetailModalOpen}
+        segment={selectedSegment}
       />
     </div>
   )

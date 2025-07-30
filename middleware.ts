@@ -9,9 +9,23 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl
         
+        // Allow auth endpoints
+        if (pathname.startsWith('/api/auth')) {
+          return true
+        }
+        
         // Admin routes require ADMIN or RESTAURANT_ADMIN role
         if (pathname.startsWith('/admin')) {
           return token?.role === 'ADMIN' || token?.role === 'RESTAURANT_ADMIN'
+        }
+        
+        // API routes require authentication
+        if (pathname.startsWith('/api')) {
+          // TEMPORARY: Allow transactions API for testing
+          if (pathname.startsWith('/api/transactions')) {
+            return true
+          }
+          return !!token
         }
         
         // Client routes require any authenticated user
@@ -26,5 +40,5 @@ export default withAuth(
 )
 
 export const config = {
-  matcher: ['/admin/:path*', '/profile/:path*', '/loyalty-card/:path*']
+  matcher: ['/admin/:path*', '/profile/:path*', '/loyalty-card/:path*', '/api/:path*']
 }

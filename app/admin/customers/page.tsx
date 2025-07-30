@@ -3,15 +3,24 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CustomerTable } from '@/components/admin/customers/customer-table'
+import { EnhancedCustomersView } from '@/components/admin/customers/enhanced-customers-view'
 import { CustomerForm } from '@/components/admin/customers/customer-form'
-import { CustomerFilters } from '@/components/admin/customers/customer-filters'
-import { Plus, Users, TrendingUp, Award, Calendar } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Customer } from '@prisma/client'
 import { toast } from 'sonner'
 
 interface CustomerWithDetails extends Customer {
   restaurant: { name: string }
+  tier?: {
+    id: string
+    name: string
+    displayName: string
+    color: string
+    gradient: string | null
+    icon: string | null
+    level: number
+    pointMultiplier: number
+  }
   _count: { transactions: number }
 }
 
@@ -158,8 +167,7 @@ export default function CustomersPage() {
   }
 
   const handleView = (customer: CustomerWithDetails) => {
-    // TODO: Implement customer detail view
-    console.log('View customer:', customer)
+    window.location.href = `/admin/customers/${customer.id}`
   }
 
   const handleSearch = (search: string) => {
@@ -174,36 +182,10 @@ export default function CustomersPage() {
 
   const handleClearFilters = () => {
     setSearchValue('')
-    setLevelFilter('ALL')
+    setLevelFilter('')
     setCurrentPage(1)
   }
 
-  const statsCards = [
-    {
-      title: 'Toplam Müşteri',
-      value: stats.total.toLocaleString(),
-      description: `${stats.newThisMonth} yeni bu ay`,
-      icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50'
-    },
-    {
-      title: 'Aktif Müşteri',
-      value: stats.activeCustomers.toLocaleString(),
-      description: 'En az 1 işlem yapmış',
-      icon: TrendingUp,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50'
-    },
-    {
-      title: 'Ortalama Puan',
-      value: stats.averagePoints.toLocaleString(),
-      description: 'Müşteri başına',
-      icon: Award,
-      color: 'text-amber-600',
-      bgColor: 'bg-amber-50'
-    }
-  ]
 
   return (
     <div className="space-y-6">
@@ -218,58 +200,23 @@ export default function CustomersPage() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {statsCards.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                {stat.title}
-              </CardTitle>
-              <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-              <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <CustomerFilters
-        onSearch={handleSearch}
-        onLevelFilter={handleLevelFilter}
-        onClearFilters={handleClearFilters}
+      {/* Enhanced Customers View */}
+      <EnhancedCustomersView
+        customers={customers}
+        stats={stats}
+        loading={loading}
+        onEdit={handleEdit}
+        onDelete={handleDeleteCustomer}
+        onView={handleView}
         searchValue={searchValue}
-        levelValue={levelFilter}
+        onSearchChange={handleSearch}
+        levelFilter={levelFilter}
+        onLevelFilterChange={handleLevelFilter}
+        onClearFilters={handleClearFilters}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
       />
-
-      {/* Customer Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Müşteri Listesi</CardTitle>
-          <CardDescription>
-            Tüm müşterilerinizi görüntüleyin ve yönetin
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
-            </div>
-          ) : (
-            <CustomerTable
-              customers={customers}
-              onEdit={handleEdit}
-              onDelete={handleDeleteCustomer}
-              onView={handleView}
-            />
-          )}
-        </CardContent>
-      </Card>
 
       {/* Customer Form Dialog */}
       <CustomerForm

@@ -39,7 +39,16 @@ export async function GET(request: NextRequest) {
         where,
         skip,
         take: limit,
-        include: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          rules: true,
+          isAutomatic: true,
+          criteria: true,
+          restaurantId: true,
+          createdAt: true,
+          updatedAt: true,
           restaurant: {
             select: { name: true }
           },

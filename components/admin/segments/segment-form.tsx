@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -8,7 +8,16 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Switch } from '@/components/ui/switch'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -17,10 +26,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Target, Sparkles, TrendingUp, Users, Clock, ShoppingCart, DollarSign } from 'lucide-react'
 import { Segment } from '@prisma/client'
-import { SegmentCriteriaForm } from './segment-criteria-form'
-import { SegmentCriteria } from '@/lib/segment-analyzer'
+import { SegmentCriteria, DEFAULT_SEGMENTS } from '@/lib/segment-analyzer'
 
 const segmentSchema = z.object({
   name: z.string().min(2, 'Segment adı en az 2 karakter olmalıdır'),
@@ -44,6 +52,25 @@ interface ExtendedSegment extends Segment {
   isAutomatic?: boolean
   criteria?: string
 }
+
+const periodOptions = [
+  { value: 'last_30_days', label: 'Son 30 Gün', icon: Clock },
+  { value: 'last_90_days', label: 'Son 90 Gün', icon: Clock },
+  { value: 'last_180_days', label: 'Son 180 Gün', icon: Clock },
+  { value: 'last_year', label: 'Son 1 Yıl', icon: Clock },
+  { value: 'all_time', label: 'Tüm Zamanlar', icon: Clock }
+]
+
+const templateIcons: Record<string, any> = {
+  'VIP Müşteriler': Sparkles,
+  'Aktif Müşteriler': TrendingUp,
+  'Sadık Müşteriler': Users,
+  'Yeni Müşteriler': Users,
+  'Risk Altındaki Müşteriler': Clock,
+  'Yüksek Harcama Yapanlar': DollarSign,
+  'Sık Alışveriş Yapanlar': ShoppingCart
+}
+
 export function SegmentForm({ 
   open, 
   onOpenChange, 
@@ -51,18 +78,16 @@ export function SegmentForm({
   onSubmit, 
   isLoading 
 }: SegmentFormProps) {
-  const [segmentCriteria, setSegmentCriteria] = useState<SegmentCriteria | null>(
-    segment?.criteria ? JSON.parse(segment.criteria) : null
-  )
-  const [isAutomatic, setIsAutomatic] = useState(
-    (segment as ExtendedSegment)?.isAutomatic || false
-  )
+  const [segmentCriteria, setSegmentCriteria] = useState<SegmentCriteria | null>(null)
+  const [isAutomatic, setIsAutomatic] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('')
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    reset
+    reset,
+    setValue
   } = useForm<SegmentFormData>({
     resolver: zodResolver(segmentSchema),
     defaultValues: {
@@ -74,50 +99,131 @@ export function SegmentForm({
     }
   })
 
+  useEffect(() => {
+    if (segment) {
+      const extSegment = segment as ExtendedSegment
+      
+      reset({
+        name: segment.name || '',
+        description: segment.description || '',
+        rules: segment.rules || '',
+        isAutomatic: extSegment.isAutomatic || false,
+        criteria: extSegment.criteria || ''
+      })
+      
+      if (extSegment.criteria) {
+        try {
+          setSegmentCriteria(JSON.parse(extSegment.criteria))
+          setIsAutomatic(extSegment.isAutomatic || false)
+        } catch (error) {
+          console.error('Error parsing criteria:', error)
+        }
+      }
+    } else {
+      reset({
+        name: '',
+        description: '',
+        rules: '',
+        isAutomatic: false,
+        criteria: ''
+      })
+      setSegmentCriteria(null)
+      setIsAutomatic(false)
+      setSelectedTemplate('')
+    }
+  }, [segment, reset])
+
   const handleFormSubmit = async (data: SegmentFormData) => {
     const submitData = {
       ...data,
       isAutomatic,
       criteria: isAutomatic && segmentCriteria ? JSON.stringify(segmentCriteria) : undefined
     }
+    
     await onSubmit(submitData)
     reset()
     setSegmentCriteria(null)
     setIsAutomatic(false)
+    setSelectedTemplate('')
+  }
+
+  const loadTemplate = (templateName: string) => {
+    const template = DEFAULT_SEGMENTS.find(s => s.name === templateName)
+    if (template) {
+      setValue('name', template.name)
+      setValue('description', template.description)
+      setSegmentCriteria(template.criteria)
+      setIsAutomatic(true)
+    }
+  }
+
+  const updateCriteria = (updates: Partial<SegmentCriteria>) => {
+    const newCriteria = { ...segmentCriteria, ...updates } as SegmentCriteria
+    setSegmentCriteria(newCriteria)
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+            <Target className="h-6 w-6 text-amber-600" />
             {segment ? 'Segment Düzenle' : 'Yeni Segment Oluştur'}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-base">
             {segment 
-              ? 'Segment bilgilerini güncelleyin.' 
-              : 'Yeni müşteri segmenti oluşturun.'
+              ? 'Segment bilgilerini güncelleyin ve müşteri kriterlerini düzenleyin.' 
+              : 'Müşterilerinizi otomatik veya manuel olarak gruplandırın.'
             }
           </DialogDescription>
         </DialogHeader>
         
-        <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="basic">Temel Bilgiler</TabsTrigger>
-            <TabsTrigger value="criteria">Segment Kriterleri</TabsTrigger>
-          </TabsList>
-          
-          <form onSubmit={handleSubmit(handleFormSubmit)}>
-            <TabsContent value="basic" className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Segment Adı *</Label>
-                <Input
-                  id="name"
-                  {...register('name')}
-                  placeholder="Örn: VIP Müşteriler"
-                />
-                {errors.name && (
-                  <p className="text-sm text-red-600">{errors.name.message}</p>
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+          {/* Temel Bilgiler */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Temel Bilgiler</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Segment Adı *</Label>
+                  <Input
+                    id="name"
+                    {...register('name')}
+                    placeholder="Örn: VIP Müşteriler"
+                    className="h-10"
+                  />
+                  {errors.name && (
+                    <p className="text-sm text-red-600">{errors.name.message}</p>
+                  )}
+                </div>
+
+                {!segment && (
+                  <div className="space-y-2">
+                    <Label>Hazır Şablon</Label>
+                    <Select value={selectedTemplate} onValueChange={(value) => {
+                      setSelectedTemplate(value)
+                      loadTemplate(value)
+                    }}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Şablon seçin (opsiyonel)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DEFAULT_SEGMENTS.map((template) => {
+                          const Icon = templateIcons[template.name] || Target
+                          return (
+                            <SelectItem key={template.name} value={template.name}>
+                              <div className="flex items-center gap-2">
+                                <Icon className="h-4 w-4" />
+                                {template.name}
+                              </div>
+                            </SelectItem>
+                          )
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 )}
               </div>
 
@@ -130,46 +236,289 @@ export function SegmentForm({
                   rows={3}
                 />
               </div>
+            </CardContent>
+          </Card>
 
-              {!isAutomatic && (
-                <div className="space-y-2">
-                  <Label htmlFor="rules">Manuel Segment Kuralları</Label>
-                  <Textarea
-                    id="rules"
-                    {...register('rules')}
-                    placeholder="Örn: Aylık harcama > 500 TL, Son ziyaret < 30 gün"
-                    rows={3}
+          {/* Otomatik Segment */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center justify-between">
+                <span>Segment Tipi</span>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={isAutomatic}
+                    onCheckedChange={(checked) => {
+                      setIsAutomatic(checked)
+                      if (checked && !segmentCriteria) {
+                        // Otomatik segment açıldığında boş criteria oluştur
+                        setSegmentCriteria({
+                          period: 'last_90_days',
+                          totalSpent: {},
+                          transactionCount: {},
+                          averageOrderValue: {},
+                          daysSinceLastPurchase: {},
+                          customerLevel: undefined
+                        })
+                      }
+                    }}
                   />
-                  <p className="text-xs text-gray-500">
-                    Manuel segmentler için açıklayıcı kurallar yazabilirsiniz
-                  </p>
+                  <Label className="font-normal">Otomatik Segment</Label>
                 </div>
-              )}
-            </TabsContent>
+              </CardTitle>
+              <CardDescription>
+                {isAutomatic 
+                  ? 'Belirlediğiniz kriterlere göre müşteriler otomatik olarak eklenecek'
+                  : 'Müşterileri manuel olarak ekleyeceksiniz'
+                }
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
-            <TabsContent value="criteria" className="mt-4">
-              <SegmentCriteriaForm
-                criteria={segmentCriteria}
-                onCriteriaChange={setSegmentCriteria}
-                isAutomatic={isAutomatic}
-                onAutomaticChange={setIsAutomatic}
-              />
-            </TabsContent>
-            <DialogFooter className="mt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                İptal
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {segment ? 'Güncelle' : 'Oluştur'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Tabs>
+          {/* Kriterler veya Manuel Kurallar */}
+          {isAutomatic ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Otomatik Segment Kriterleri</CardTitle>
+                <CardDescription>
+                  Müşterilerin bu segmente dahil olması için gereken kriterleri belirleyin
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Dönem Seçimi */}
+                <div className="space-y-2">
+                  <Label>Analiz Dönemi</Label>
+                  <Select 
+                    value={segmentCriteria?.period || 'last_90_days'} 
+                    onValueChange={(value) => updateCriteria({ period: value as any })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {periodOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          <div className="flex items-center gap-2">
+                            <option.icon className="h-4 w-4" />
+                            {option.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                {/* Kriterler Grid */}
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Sol Kolon */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Toplam Harcama</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          type="number"
+                          placeholder="Min"
+                          value={segmentCriteria?.totalSpent?.min || ''}
+                          onChange={(e) => updateCriteria({ 
+                            totalSpent: { 
+                              ...segmentCriteria?.totalSpent, 
+                              min: e.target.value ? Number(e.target.value) : undefined 
+                            }
+                          })}
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Max"
+                          value={segmentCriteria?.totalSpent?.max || ''}
+                          onChange={(e) => updateCriteria({ 
+                            totalSpent: { 
+                              ...segmentCriteria?.totalSpent, 
+                              max: e.target.value ? Number(e.target.value) : undefined 
+                            }
+                          })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Alışveriş Sayısı</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          type="number"
+                          placeholder="Min"
+                          value={segmentCriteria?.purchaseCount?.min || ''}
+                          onChange={(e) => updateCriteria({ 
+                            purchaseCount: { 
+                              ...segmentCriteria?.purchaseCount, 
+                              min: e.target.value ? Number(e.target.value) : undefined 
+                            }
+                          })}
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Max"
+                          value={segmentCriteria?.purchaseCount?.max || ''}
+                          onChange={(e) => updateCriteria({ 
+                            purchaseCount: { 
+                              ...segmentCriteria?.purchaseCount, 
+                              max: e.target.value ? Number(e.target.value) : undefined 
+                            }
+                          })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Son Ziyaret (Gün Önce)</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          type="number"
+                          placeholder="Min"
+                          value={segmentCriteria?.lastPurchaseDays?.min || ''}
+                          onChange={(e) => updateCriteria({ 
+                            lastPurchaseDays: { 
+                              ...segmentCriteria?.lastPurchaseDays, 
+                              min: e.target.value ? Number(e.target.value) : undefined 
+                            }
+                          })}
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Max"
+                          value={segmentCriteria?.lastPurchaseDays?.max || ''}
+                          onChange={(e) => updateCriteria({ 
+                            lastPurchaseDays: { 
+                              ...segmentCriteria?.lastPurchaseDays, 
+                              max: e.target.value ? Number(e.target.value) : undefined 
+                            }
+                          })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sağ Kolon */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Ortalama Sepet Tutarı</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          type="number"
+                          placeholder="Min"
+                          value={segmentCriteria?.averageOrderValue?.min || ''}
+                          onChange={(e) => updateCriteria({ 
+                            averageOrderValue: { 
+                              ...segmentCriteria?.averageOrderValue, 
+                              min: e.target.value ? Number(e.target.value) : undefined 
+                            }
+                          })}
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Max"
+                          value={segmentCriteria?.averageOrderValue?.max || ''}
+                          onChange={(e) => updateCriteria({ 
+                            averageOrderValue: { 
+                              ...segmentCriteria?.averageOrderValue, 
+                              max: e.target.value ? Number(e.target.value) : undefined 
+                            }
+                          })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Alışveriş Sıklığı (Gün)</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          type="number"
+                          placeholder="Min"
+                          value={segmentCriteria?.purchaseFrequency?.min || ''}
+                          onChange={(e) => updateCriteria({ 
+                            purchaseFrequency: { 
+                              ...segmentCriteria?.purchaseFrequency, 
+                              min: e.target.value ? Number(e.target.value) : undefined 
+                            }
+                          })}
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Max"
+                          value={segmentCriteria?.purchaseFrequency?.max || ''}
+                          onChange={(e) => updateCriteria({ 
+                            purchaseFrequency: { 
+                              ...segmentCriteria?.purchaseFrequency, 
+                              max: e.target.value ? Number(e.target.value) : undefined 
+                            }
+                          })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Müşteri Yaşı (Gün)</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input
+                          type="number"
+                          placeholder="Min"
+                          value={segmentCriteria?.customerAge?.min || ''}
+                          onChange={(e) => updateCriteria({ 
+                            customerAge: { 
+                              ...segmentCriteria?.customerAge, 
+                              min: e.target.value ? Number(e.target.value) : undefined 
+                            }
+                          })}
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Max"
+                          value={segmentCriteria?.customerAge?.max || ''}
+                          onChange={(e) => updateCriteria({ 
+                            customerAge: { 
+                              ...segmentCriteria?.customerAge, 
+                              max: e.target.value ? Number(e.target.value) : undefined 
+                            }
+                          })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Manuel Segment Kuralları</CardTitle>
+                <CardDescription>
+                  Bu segment için açıklayıcı kurallar yazabilirsiniz
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  {...register('rules')}
+                  placeholder="Örn: Aylık harcama > 500 TL, Son ziyaret < 30 gün, Doğum günü yaklaşan müşteriler..."
+                  rows={4}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              İptal
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {segment ? 'Güncelle' : 'Oluştur'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

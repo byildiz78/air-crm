@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { assignCustomerToAutomaticSegments } from '@/lib/segment-auto-assign'
 
 const customerSchema = z.object({
   name: z.string().min(2, 'İsim en az 2 karakter olmalıdır'),
@@ -47,6 +48,18 @@ export async function GET(request: NextRequest) {
         include: {
           restaurant: {
             select: { name: true }
+          },
+          tier: {
+            select: {
+              id: true,
+              name: true,
+              displayName: true,
+              color: true,
+              gradient: true,
+              icon: true,
+              level: true,
+              pointMultiplier: true
+            }
           },
           _count: {
             select: { transactions: true }
@@ -93,6 +106,9 @@ export async function POST(request: NextRequest) {
         }
       }
     })
+
+    // Assign customer to automatic segments
+    await assignCustomerToAutomaticSegments(customer.id)
 
     return NextResponse.json(customer, { status: 201 })
   } catch (error) {
