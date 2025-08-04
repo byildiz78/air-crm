@@ -16,7 +16,9 @@ import {
   Receipt,
   Package,
   TrendingUp,
-  Crown
+  Crown,
+  Palette,
+  MessageSquare
 } from 'lucide-react'
 
 const navigation = [
@@ -64,6 +66,18 @@ const navigation = [
 ]
 
 const systemNavigation = [
+
+  
+  { 
+    name: 'Bildirim Yönetimi', 
+    href: '/admin/notifications', 
+    icon: MessageSquare
+  },
+  { 
+    name: 'Tema Yönetimi', 
+    href: '/admin/themes', 
+    icon: Palette
+  },
   { 
     name: 'Ayarlar', 
     href: '/admin/settings', 

@@ -86,6 +86,7 @@ model Customer {
   level          CustomerLevel     @default(REGULAR)
   tierId         String?
   restaurantId   String
+  themeId        String?           // Custom theme override
   pushToken      String?
   lastVisit      DateTime?
   totalSpent     Float             @default(0)
@@ -95,11 +96,13 @@ model Customer {
   campaignUsages CampaignUsage[]
   restaurant     Restaurant        @relation(fields: [restaurantId], references: [id])
   tier           Tier?             @relation("CustomerTier", fields: [tierId], references: [id])
+  theme          CustomTheme?      @relation("CustomerTheme", fields: [themeId], references: [id])
   rewards        CustomerReward[]
   segments       CustomerSegment[]
-  pointHistory   PointHistory[]
-  tierHistory    TierHistory[]
-  transactions   Transaction[]
+  pointHistory      PointHistory[]
+  tierHistory       TierHistory[]
+  transactions      Transaction[]
+  pushSubscriptions PushSubscription[]
 }
 
 model Segment {
@@ -448,4 +451,76 @@ enum PointTransactionType {
   EXPIRED
   ADJUSTED
   TRANSFERRED
+}
+
+enum NotificationType {
+  CAMPAIGN
+  REWARD
+  POINTS
+  GENERAL
+}
+
+enum Platform {
+  WEB
+  ANDROID
+  IOS
+}
+
+// Push Notification Models
+model PushSubscription {
+  id         String    @id @default(cuid())
+  customerId String
+  endpoint   String
+  p256dhKey  String
+  authKey    String
+  platform   Platform  @default(WEB)
+  userAgent  String?
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime  @default(now())
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, endpoint])
+}
+
+model NotificationLog {
+  id                String           @id @default(cuid())
+  title             String
+  body              String
+  type              NotificationType @default(GENERAL)
+  targetCustomerIds String // JSON array of customer IDs
+  sentCount         Int              @default(0)
+  failedCount       Int              @default(0)
+  webPushResponse   String? // JSON response from web-push
+  fcmResponse       String? // Legacy field, can be removed later
+  createdAt         DateTime         @default(now())
+}
+
+// Custom Theme Management
+model CustomTheme {
+  id           String    @id @default(cuid())
+  restaurantId String
+  name         String
+  description  String?
+  config       Json      // ThemeConfig as JSON
+  isActive     Boolean   @default(true)
+  isDefault    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  customers    Customer[] @relation("CustomerTheme")
+
+  @@unique([restaurantId, name])
+  @@index([restaurantId, isActive])
+}
+
+// OTP Verification (Database-based storage)
+model OTPVerification {
+  id        String   @id @default(cuid())
+  phone     String
+  otp       String
+  expiresAt DateTime
+  attempts  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  @@index([phone, expiresAt])
 }

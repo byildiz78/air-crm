@@ -1,4 +1,6 @@
 import { withAuth } from 'next-auth/middleware'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 /**
  * Check if request has valid Bearer token
@@ -16,37 +18,44 @@ function hasBearerToken(req: any): boolean {
   return expectedToken && token === expectedToken
 }
 
-export default withAuth(
+// Simple middleware for mobile routes
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Mobile routes - check for auth cookie
+  if (pathname.startsWith('/mobile') && !pathname.startsWith('/mobile/auth/')) {
+    const authToken = request.cookies.get('mobile-auth-token')
+    if (!authToken) {
+      const url = new URL('/mobile/auth/phone', request.url)
+      return NextResponse.redirect(url)
+    }
+  }
+
+  return NextResponse.next()
+}
+
+// Use withAuth for admin routes
+const adminMiddleware = withAuth(
   function middleware(req) {
-    // Add any additional middleware logic here
+    return NextResponse.next()
   },
   {
     callbacks: {
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl
         
-        // Allow auth endpoints
-        if (pathname.startsWith('/api/auth')) {
-          return true
-        }
-        
         // Admin routes require ADMIN or RESTAURANT_ADMIN role
         if (pathname.startsWith('/admin')) {
           return token?.role === 'ADMIN' || token?.role === 'RESTAURANT_ADMIN'
         }
         
-        // API routes require authentication (session OR bearer token)
-        if (pathname.startsWith('/api')) {
+        // API routes (excluding mobile) require authentication
+        if (pathname.startsWith('/api') && !pathname.startsWith('/api/mobile/')) {
           // Check Bearer token first
           if (hasBearerToken(req)) {
             return true
           }
           // Fallback to session check
-          return !!token
-        }
-        
-        // Client routes require any authenticated user
-        if (pathname.startsWith('/profile') || pathname.startsWith('/loyalty-card')) {
           return !!token
         }
         
@@ -56,6 +65,19 @@ export default withAuth(
   }
 )
 
+// Export the appropriate middleware based on path
+export default function combinedMiddleware(req: NextRequest) {
+  const { pathname } = req.nextUrl
+  
+  // Use withAuth middleware for admin and API routes
+  if (pathname.startsWith('/admin') || (pathname.startsWith('/api') && !pathname.startsWith('/api/mobile/'))) {
+    return (adminMiddleware as any)(req)
+  }
+  
+  // Use simple middleware for mobile routes
+  return middleware(req)
+}
+
 export const config = {
-  matcher: ['/admin/:path*', '/profile/:path*', '/loyalty-card/:path*', '/api/:path*']
+  matcher: ['/admin/:path*', '/api/:path*', '/mobile/:path*']
 }

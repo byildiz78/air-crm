@@ -9,7 +9,13 @@
       "Bash(rm:*)",
       "Bash(openssl rand:*)",
       "Bash(mv:*)",
-      "Bash(sudo npx prisma generate)"
+      "Bash(sudo npx prisma generate)",
+      "Bash(mkdir:*)",
+      "Bash(npx web-push:*)",
+      "Bash(find:*)",
+      "Bash(tsx:*)",
+      "Bash(npx tsc:*)",
+      "Bash(pkill:*)"
     ],
     "deny": []
   }
