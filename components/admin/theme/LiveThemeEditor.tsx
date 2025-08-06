@@ -13,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { RefreshCw, Download, Upload, Eye, Save, Undo2 } from 'lucide-react'
 import { ThemeConfig, defaultTheme, restaurantThemes, applyTheme, themeToCssVariables } from '@/lib/theme-config'
+import { createPortal } from 'react-dom'
 
 interface LiveThemeEditorProps {
   onSave?: (theme: ThemeConfig, options: { isDefault: boolean, name: string, description?: string }) => void
@@ -28,11 +29,20 @@ export function LiveThemeEditor({ onSave, onCancel, initialTheme = defaultTheme,
   const [hasChanges, setHasChanges] = useState(false)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null)
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null)
   const [saveOptions, setSaveOptions] = useState({
     name: '',
     description: '',
     isDefault: false
   })
+  const [dialogContainer, setDialogContainer] = useState<HTMLElement | null>(null)
+
+  // Update themes when initialTheme changes (when editing different theme)
+  useEffect(() => {
+    setCurrentTheme(initialTheme)
+    setOriginalTheme(initialTheme)
+    setHasChanges(false)
+  }, [initialTheme])
 
   // Apply theme changes in real-time (NEVER apply in admin context)
   useEffect(() => {
@@ -55,12 +65,51 @@ export function LiveThemeEditor({ onSave, onCancel, initialTheme = defaultTheme,
   // Set portal container after mount
   useEffect(() => {
     setPortalContainer(document.querySelector('.admin-app'))
+    // Dialog container - use body to avoid admin-app issues
+    setDialogContainer(document.body)
   }, [])
 
   // Detect changes
   useEffect(() => {
-    setHasChanges(JSON.stringify(currentTheme) !== JSON.stringify(originalTheme))
+    const hasChanged = JSON.stringify(currentTheme) !== JSON.stringify(originalTheme)
+    setHasChanges(hasChanged)
   }, [currentTheme, originalTheme])
+
+  // Create blob URL for preview (debounced for performance)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      // Cleanup previous blob URL
+      if (previewBlobUrl) {
+        URL.revokeObjectURL(previewBlobUrl)
+      }
+
+      if (currentTheme.contact_information) {
+        const isFullDoc = currentTheme.contact_information.trim().toLowerCase().includes('<!doctype') || 
+                         currentTheme.contact_information.trim().toLowerCase().includes('<html')
+        
+        if (isFullDoc) {
+          const blob = new Blob([currentTheme.contact_information], { type: 'text/html' })
+          const url = URL.createObjectURL(blob)
+          setPreviewBlobUrl(url)
+        } else {
+          setPreviewBlobUrl(null)
+        }
+      } else {
+        setPreviewBlobUrl(null)
+      }
+    }, 300) // 300ms debounce
+
+    return () => clearTimeout(timeoutId)
+  }, [currentTheme.contact_information])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (previewBlobUrl) {
+        URL.revokeObjectURL(previewBlobUrl)
+      }
+    }
+  }, [])
 
   // Update theme property
   const updateTheme = (key: keyof ThemeConfig, value: any) => {
@@ -107,17 +156,20 @@ export function LiveThemeEditor({ onSave, onCancel, initialTheme = defaultTheme,
       return
     }
 
-    // Save to localStorage for live editing
-    localStorage.setItem('custom-theme', JSON.stringify(currentTheme))
-    setOriginalTheme(currentTheme)
-    
-    onSave?.(currentTheme, {
-      name: saveOptions.name.trim(),
-      description: saveOptions.description.trim() || undefined,
-      isDefault: saveOptions.isDefault
-    })
+    // Performance optimize: Use setTimeout to prevent blocking
+    setTimeout(() => {
+      // Save to localStorage for live editing
+      localStorage.setItem('custom-theme', JSON.stringify(currentTheme))
+      setOriginalTheme(currentTheme)
+      
+      onSave?.(currentTheme, {
+        name: saveOptions.name.trim(),
+        description: saveOptions.description.trim() || undefined,
+        isDefault: saveOptions.isDefault
+      })
 
-    setShowSaveDialog(false)
+      setShowSaveDialog(false)
+    }, 0)
   }
 
   // Export theme as JSON
@@ -150,6 +202,9 @@ export function LiveThemeEditor({ onSave, onCancel, initialTheme = defaultTheme,
 
   // Generate CSS variables preview
   const cssVars = themeToCssVariables(currentTheme)
+
+  // Real-time change detection (to avoid React state timing issues)
+  const realTimeHasChanges = JSON.stringify(currentTheme) !== JSON.stringify(originalTheme)
 
   return (
     <div className="space-y-6">
@@ -208,7 +263,7 @@ export function LiveThemeEditor({ onSave, onCancel, initialTheme = defaultTheme,
             </div>
             
             <div className="flex items-center gap-2">
-              {hasChanges && (
+              {realTimeHasChanges && (
                 <Badge variant="secondary">Değişiklikler var</Badge>
               )}
               
@@ -269,11 +324,12 @@ export function LiveThemeEditor({ onSave, onCancel, initialTheme = defaultTheme,
 
             <CardContent>
               <Tabs defaultValue="colors" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="colors">Renkler</TabsTrigger>
                   <TabsTrigger value="typography">Yazı</TabsTrigger>
                   <TabsTrigger value="layout">Düzen</TabsTrigger>
                   <TabsTrigger value="assets">Logolar</TabsTrigger>
+                  <TabsTrigger value="contact">İletişim</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="colors" className="space-y-4">
@@ -534,6 +590,127 @@ export function LiveThemeEditor({ onSave, onCancel, initialTheme = defaultTheme,
                     </div>
                   </div>
                 </TabsContent>
+
+                <TabsContent value="contact" className="space-y-4">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="contact_information">İletişim Bilgileri HTML İçeriği</Label>
+                      <p className="text-sm text-gray-600 mb-2">
+                        Mobile uygulamanın İletişim sayfasında görüntülenecek HTML içeriği.
+                      </p>
+                      <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800 mb-3">
+                        <strong>İki Render Modu:</strong>
+                        <ul className="list-disc list-inside mt-1 space-y-1">
+                          <li><strong>Basit HTML:</strong> div, p, span gibi temel HTML - Tailwind CSS kullanabilirsiniz</li>
+                          <li><strong>Full Dokümanlı HTML:</strong> &lt;!DOCTYPE html&gt; veya &lt;html&gt; ile başlayan tam HTML - CSS, JS destekli iframe'de render edilir</li>
+                        </ul>
+                      </div>
+                      <Textarea
+                        id="contact_information"
+                        value={currentTheme.contact_information || ''}
+                        onChange={(e) => updateTheme('contact_information', e.target.value)}
+                        placeholder={`Basit HTML Örneği:
+<div class="space-y-4">
+  <div>
+    <h3 class="font-semibold text-lg mb-2">İletişim Bilgileri</h3>
+    <p class="text-gray-600">Bizimle iletişime geçin!</p>
+  </div>
+  <div class="space-y-2">
+    <div class="flex items-center space-x-3">
+      <span class="font-medium">📧 E-posta:</span>
+      <span>info@restaurant.com</span>
+    </div>
+  </div>
+</div>
+
+VEYA Full HTML Dokümanlı:
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>İletişim</title>
+  <link href="https://cdn.tailwindcss.com" rel="stylesheet">
+  <script>
+    // JavaScript kodlarınız
+  </script>
+</head>
+<body>
+  <div class="container mx-auto p-4">
+    <h1>İletişim Bilgileri</h1>
+    <!-- İçerikler -->
+  </div>
+</body>
+</html>`}
+                        rows={12}
+                        className="font-mono text-sm"
+                      />
+                    </div>
+                    
+                    {/* HTML Preview */}
+                    {currentTheme.contact_information && (
+                      <div className="space-y-2">
+                        <Label>Önizleme</Label>
+                        {(() => {
+                          const isFullDoc = currentTheme.contact_information.trim().toLowerCase().includes('<!doctype') || 
+                                           currentTheme.contact_information.trim().toLowerCase().includes('<html')
+                          
+                          return isFullDoc ? (
+                            <div className="border rounded-md bg-gray-50 p-3">
+                              <p className="text-xs text-gray-600 mb-3">Full HTML Dokümanlı - popup window'da açılacak</p>
+                              
+                              <div className="space-y-2 mb-3">
+                                <button
+                                  onClick={() => {
+                                    if (previewBlobUrl) {
+                                      const popup = window.open(
+                                        previewBlobUrl, 
+                                        '_blank',
+                                        'width=1000,height=700,scrollbars=yes,resizable=yes'
+                                      )
+                                      
+                                      if (!popup) {
+                                        alert('Popup engelleyici aktif. Önizleme için popup izni gerekli.')
+                                      }
+                                    }
+                                  }}
+                                  className="w-full py-2 px-4 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors disabled:bg-gray-400"
+                                  disabled={!previewBlobUrl}
+                                >
+                                  Popup'da Önizle
+                                </button>
+                                
+                                {previewBlobUrl && (
+                                  <a
+                                    href={previewBlobUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="block w-full py-1 px-3 bg-gray-500 text-white rounded text-xs text-center hover:bg-gray-600 transition-colors"
+                                  >
+                                    Yeni Sekmede Aç
+                                  </a>
+                                )}
+                              </div>
+                              
+                              {/* Safe text preview */}
+                              <div className="max-h-32 overflow-y-auto bg-white p-2 rounded text-xs font-mono">
+                                {currentTheme.contact_information?.substring(0, 300)}
+                                {(currentTheme.contact_information?.length || 0) > 300 && '...'}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <p className="text-xs text-gray-600">Basit HTML - normal render</p>
+                              <div 
+                                className="p-4 border rounded-md bg-gray-50"
+                                dangerouslySetInnerHTML={{ __html: currentTheme.contact_information }}
+                              />
+                            </div>
+                          )
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
               </Tabs>
             </CardContent>
           </Card>
@@ -548,9 +725,9 @@ export function LiveThemeEditor({ onSave, onCancel, initialTheme = defaultTheme,
             </CardHeader>
             <CardContent className="space-y-3">
               <Button 
-                onClick={openSaveDialog} 
+                onClick={openSaveDialog}
                 className="w-full"
-                disabled={!hasChanges}
+                disabled={!realTimeHasChanges && !editingTheme}
               >
                 <Save className="w-4 h-4 mr-2" />
                 {editingTheme ? 'Güncelle' : 'Temayı Kaydet'}
@@ -560,7 +737,7 @@ export function LiveThemeEditor({ onSave, onCancel, initialTheme = defaultTheme,
                 variant="outline" 
                 onClick={resetTheme} 
                 className="w-full"
-                disabled={!hasChanges}
+                disabled={!realTimeHasChanges}
               >
                 <Undo2 className="w-4 h-4 mr-2" />
                 Değişiklikleri Geri Al
@@ -644,73 +821,86 @@ export function LiveThemeEditor({ onSave, onCancel, initialTheme = defaultTheme,
         </div>
       </div>
 
-      {/* Save Theme Dialog */}
-      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
+      {/* Save Theme Dialog - Custom Modal */}
+      {dialogContainer && showSaveDialog && createPortal(
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '8px', maxWidth: '500px', width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
               {editingTheme ? 'Temayı Güncelle' : 'Temayı Kaydet'}
-            </DialogTitle>
-            <DialogDescription>
+            </h2>
+            <p style={{ color: '#666', marginBottom: '16px', fontSize: '14px' }}>
               {editingTheme 
                 ? 'Mevcut tema ayarlarını güncelleyin.'
                 : 'Tema ayarlarını veritabanına kaydedin ve mobile uygulamada kullanın.'
               }
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="theme-name">Tema Adı *</Label>
-              <Input
-                id="theme-name"
+            </p>
+            
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Tema Adı *</label>
+              <input
+                type="text"
                 placeholder="Örn: McDonald's Teması"
                 value={saveOptions.name}
                 onChange={(e) => setSaveOptions(prev => ({ ...prev, name: e.target.value }))}
+                style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="theme-description">Açıklama</Label>
-              <Textarea
-                id="theme-description"
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Açıklama</label>
+              <textarea
                 placeholder="Tema hakkında kısa açıklama..."
                 value={saveOptions.description}
                 onChange={(e) => setSaveOptions(prev => ({ ...prev, description: e.target.value }))}
                 rows={3}
+                style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
               />
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
+            <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="checkbox"
                 id="is-default"
                 checked={saveOptions.isDefault}
-                onCheckedChange={(checked) => setSaveOptions(prev => ({ ...prev, isDefault: Boolean(checked) }))}
+                onChange={(e) => setSaveOptions(prev => ({ ...prev, isDefault: e.target.checked }))}
               />
-              <Label htmlFor="is-default" className="text-sm">
+              <label htmlFor="is-default" style={{ fontSize: '14px' }}>
                 Bu temayı varsayılan tema olarak ayarla
-              </Label>
+              </label>
             </div>
 
             {saveOptions.isDefault && (
-              <div className="text-sm text-orange-600 bg-orange-50 p-3 rounded-md">
+              <div style={{ backgroundColor: '#fff3cd', color: '#856404', padding: '12px', borderRadius: '4px', marginBottom: '16px', fontSize: '14px' }}>
                 ⚠️ Varsayılan tema olarak ayarlanırsa, diğer varsayılan temalar otomatik olarak devre dışı bırakılır.
-                Mobile uygulamada bu tema otomatik olarak yüklenir.
               </div>
             )}
-          </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
-              İptal
-            </Button>
-            <Button onClick={saveTheme} disabled={!saveOptions.name.trim()}>
-              <Save className="w-4 h-4 mr-2" />
-              {editingTheme ? 'Güncelle' : 'Kaydet'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => setShowSaveDialog(false)}
+                style={{ padding: '8px 16px', border: '1px solid #ccc', backgroundColor: 'white', borderRadius: '4px', cursor: 'pointer' }}
+              >
+                İptal
+              </button>
+              <button 
+                onClick={saveTheme}
+                disabled={!saveOptions.name.trim()}
+                style={{ 
+                  padding: '8px 16px', 
+                  backgroundColor: !saveOptions.name.trim() ? '#ccc' : '#3b82f6', 
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: '4px', 
+                  cursor: !saveOptions.name.trim() ? 'not-allowed' : 'pointer' 
+                }}
+              >
+                {editingTheme ? 'Güncelle' : 'Kaydet'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        dialogContainer
+      )}
     </div>
   )
 }

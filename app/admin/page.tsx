@@ -156,12 +156,12 @@ export default function AdminDashboard() {
       bgColor: 'bg-indigo-50'
     },
     {
-      title: 'Tamamlanan İşlem',
-      value: (stats.completedTransactions || 0).toString(),
-      description: `${stats.pendingTransactions || 0} beklemede`,
-      icon: CheckCircle,
-      color: 'text-amber-600',
-      bgColor: 'bg-amber-50'
+      title: 'Toplam Harcanan Puan',
+      value: Math.abs(stats.totalPointsSpent || 0).toLocaleString(),
+      description: `${((Math.abs(stats.totalPointsSpent || 0)) * 0.1).toLocaleString()} ₺ değerinde`,
+      icon: Minus,
+      color: 'text-red-600',
+      bgColor: 'bg-red-50'
     },
     {
       title: 'Toplam Puan Kazanılan',

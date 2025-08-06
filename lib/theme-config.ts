@@ -38,6 +38,9 @@ export interface ThemeConfig {
   
   // Shadows
   shadowStyle: 'none' | 'sm' | 'md' | 'lg' | 'xl'
+  
+  // Contact Information
+  contact_information?: string // HTML content for contact page
 }
 
 // Default Air CRM Theme
@@ -75,7 +78,38 @@ export const defaultTheme: ThemeConfig = {
   borderRadius: 'lg',
   
   // Shadows
-  shadowStyle: 'md'
+  shadowStyle: 'md',
+  
+  // Contact Information
+  contact_information: `
+    <div class="space-y-4">
+      <div>
+        <h3 class="font-semibold text-lg mb-2">İletişim Bilgileri</h3>
+        <p class="text-gray-600">Bizimle iletişime geçin!</p>
+      </div>
+      
+      <div class="space-y-2">
+        <div class="flex items-center space-x-3">
+          <span class="font-medium">📧 E-posta:</span>
+          <span>info@restaurant.com</span>
+        </div>
+        <div class="flex items-center space-x-3">
+          <span class="font-medium">📞 Telefon:</span>
+          <span>+90 212 555 0123</span>
+        </div>
+        <div class="flex items-center space-x-3">
+          <span class="font-medium">📍 Adres:</span>
+          <span>İstanbul, Türkiye</span>
+        </div>
+      </div>
+      
+      <div class="mt-4">
+        <p class="text-sm text-gray-500">
+          Çalışma Saatleri: Pazartesi-Pazar 09:00-22:00
+        </p>
+      </div>
+    </div>
+  `
 }
 
 // Example Restaurant Themes

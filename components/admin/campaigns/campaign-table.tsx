@@ -188,10 +188,14 @@ export function CampaignTable({
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="z-[9999]">
                       <DropdownMenuItem onClick={() => onView(campaign)}>
                         <Eye className="mr-2 h-4 w-4" />
                         Detaylar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onEdit(campaign)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Düzenle
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onToggleStatus(campaign)}>
                         {campaign.isActive ? (
@@ -205,10 +209,6 @@ export function CampaignTable({
                             Aktifleştir
                           </>
                         )}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onEdit(campaign)}>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Düzenle
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => onDelete(campaign)}

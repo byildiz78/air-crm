@@ -38,7 +38,8 @@ export async function GET(request: NextRequest) {
         targetCategories: true,
         discountValue: true,
         discountType: true,
-        maxUsagePerCustomer: true
+        maxUsagePerCustomer: true,
+        startDate: true
       }
     })
 

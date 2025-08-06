@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { Home, Tag, Gift, User } from 'lucide-react'
+import { Home, Tag, Gift, User, Phone } from 'lucide-react'
 import { useTheme } from '@/lib/mobile/theme-context'
 
 const navItems = [
@@ -20,6 +20,11 @@ const navItems = [
     label: 'Ödüller',
     href: '/mobile/rewards',
     icon: Gift,
+  },
+  {
+    label: 'İletişim',
+    href: '/mobile/contact',
+    icon: Phone,
   },
   {
     label: 'Profil',

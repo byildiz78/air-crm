@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
       thisMonthRevenue,
       lastMonthRevenue,
       revenueByDay,
+      pointsByMonthPlaceholder, // placeholder for pointsByMonth
       // Additional transaction stats
       completedTransactions,
       pendingTransactions,

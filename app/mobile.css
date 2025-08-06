@@ -62,3 +62,38 @@
   --admin-color-text-primary: initial !important;
   --admin-color-text-secondary: initial !important;
 }
+
+/* Contact page specific styles */
+.contact-content h1,
+.contact-content h2,
+.contact-content h3,
+.contact-content h4,
+.contact-content h5,
+.contact-content h6 {
+  color: var(--color-text-primary);
+}
+
+.contact-content p {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.contact-content a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.contact-content a:hover {
+  color: var(--color-primary);
+  opacity: 0.8;
+}
+
+.contact-content ul,
+.contact-content ol {
+  padding-left: 1.5rem;
+  color: var(--color-text-secondary);
+}
+
+.contact-content li {
+  margin-bottom: 0.5rem;
+}

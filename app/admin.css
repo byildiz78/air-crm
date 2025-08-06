@@ -22,9 +22,8 @@
   --admin-color-text-secondary: #6b7280 !important;
 }
 
-/* Force admin colors globally within admin context */
-.admin-app,
-.admin-app * {
+/* Force admin colors - but avoid wildcard selector that breaks components */
+.admin-app {
   /* Override any potential mobile theme conflicts */
   --color-primary: var(--admin-color-primary) !important;
   --color-secondary: var(--admin-color-secondary) !important;
@@ -42,10 +41,8 @@
   line-height: 1.5;
   background-color: var(--admin-color-background);
   color: var(--admin-color-text-primary);
-  isolation: isolate;
   position: relative;
-  z-index: 100; /* Very high z-index to override any mobile styles */
-  contain: layout style paint; /* Strong containment */
+  /* Removed isolation and contain - they were blocking portals */
 }
 
 /* Override any mobile theme variables that might leak */
@@ -59,71 +56,143 @@
   --mobile-color-text-secondary: initial !important;
 }
 
-/* Fix Select dropdowns in admin context */
-.admin-app [role="listbox"],
-.admin-app [data-radix-popper-content-wrapper],
-.admin-app [data-radix-portal] {
-  z-index: 9999 !important;
+/* NUCLEAR OPTION: Reset everything for dropdowns */
+* {
+  /* Reset any potential height constraints */
 }
 
-/* Ensure portal elements inherit admin styles when in admin container */
-.admin-app [data-radix-portal],
-.admin-app [data-radix-select-content] {
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif !important;
+/* Emergency portal fix */
+[data-radix-portal],
+[data-radix-popper-content-wrapper],
+[data-portal-container],
+div[data-radix-portal] {
+  z-index: 99999 !important;
+  position: fixed !important;
 }
 
-.admin-app [data-radix-select-trigger] {
+/* BRUTE FORCE: Override everything */
+[data-radix-select-content],
+[data-radix-dropdown-menu-content] {
+  all: unset !important;
+  display: block !important;
+  position: fixed !important;
+  z-index: 99999 !important;
   background: white !important;
-  border: 1px solid #d1d5db !important;
-  color: var(--admin-color-text-primary) !important;
-}
-
-.admin-app [data-radix-select-trigger]:hover {
-  border-color: #9ca3af !important;
-}
-
-.admin-app [data-radix-select-trigger][data-state="open"] {
-  border-color: var(--admin-color-primary) !important;
-  box-shadow: 0 0 0 1px var(--admin-color-primary) !important;
-}
-
-.admin-app [data-radix-select-content] {
-  z-index: 9999 !important;
-  background: white !important;
-  border: 1px solid #e5e7eb !important;
-  border-radius: 6px !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid #ccc !important;
+  border-radius: 4px !important;
+  padding: 4px !important;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+  min-width: 120px !important;
   max-height: 200px !important;
   overflow-y: auto !important;
+  font-family: system-ui !important;
+  font-size: 14px !important;
 }
 
-.admin-app [data-radix-select-item] {
-  background: transparent !important;
-  color: var(--admin-color-text-primary) !important;
-  cursor: pointer !important;
+[data-radix-select-item],
+[data-radix-dropdown-menu-item] {
+  all: unset !important;
+  display: block !important;
   padding: 8px 12px !important;
-  border-radius: 4px !important;
-  margin: 2px !important;
+  cursor: pointer !important;
+  color: black !important;
+  min-height: 24px !important;
+  line-height: 1.2 !important;
 }
 
-.admin-app [data-radix-select-item]:hover {
-  background: #f3f4f6 !important;
+[data-radix-select-item]:hover,
+[data-radix-dropdown-menu-item]:hover {
+  background: #f0f0f0 !important;
 }
 
-.admin-app [data-radix-select-item][data-highlighted] {
-  background: var(--admin-color-primary) !important;
-  color: white !important;
-}
-
-.admin-app [data-radix-select-item][data-state="checked"] {
-  background: var(--admin-color-primary) !important;
-  color: white !important;
-}
+/* Clean slate - simplified approach */
 
 /* Ensure admin components use admin colors */
 .admin-app .bg-primary { background-color: var(--admin-color-primary) !important; }
 .admin-app .text-primary { color: var(--admin-color-primary) !important; }
 .admin-app .border-primary { border-color: var(--admin-color-primary) !important; }
+
+/* Ensure buttons work correctly - override any conflicting styles */
+.admin-app button[disabled] {
+  pointer-events: none !important;
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+.admin-app button:not([disabled]) {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+/* Ensure button interactivity is preserved */
+.admin-app button:not([disabled]):hover {
+  opacity: 0.9;
+  transition: opacity 0.2s;
+}
+
+.admin-app button:not([disabled]):active {
+  transform: scale(0.98);
+}
+
+/* Fix all Radix UI dropdown menus in admin */
+.admin-app [data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+  position: fixed !important;
+}
+
+.admin-app [data-radix-dropdown-menu-content] {
+  z-index: 9999 !important;
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  padding: 4px !important;
+  min-width: 120px !important;
+  max-height: 300px !important;
+  overflow-y: auto !important;
+}
+
+.admin-app [data-radix-dropdown-menu-item] {
+  padding: 8px 12px !important;
+  border-radius: 4px !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  color: var(--admin-color-text-primary) !important;
+  display: flex !important;
+  align-items: center !important;
+  user-select: none !important;
+}
+
+.admin-app [data-radix-dropdown-menu-item]:hover {
+  background: #f3f4f6 !important;
+  outline: none !important;
+}
+
+.admin-app [data-radix-dropdown-menu-item][data-highlighted] {
+  background: var(--admin-color-primary) !important;
+  color: white !important;
+}
+
+.admin-app [data-radix-dropdown-menu-item][data-disabled] {
+  opacity: 0.5 !important;
+  pointer-events: none !important;
+}
+
+/* Fix dropdown triggers */
+.admin-app [data-radix-dropdown-menu-trigger] {
+  background: transparent !important;
+  border: 1px solid #d1d5db !important;
+  color: var(--admin-color-text-primary) !important;
+  cursor: pointer !important;
+}
+
+.admin-app [data-radix-dropdown-menu-trigger]:hover {
+  background: #f9fafb !important;
+}
+
+.admin-app [data-radix-dropdown-menu-trigger][data-state="open"] {
+  background: #f3f4f6 !important;
+}
 
 /* Theme preview isolation - prevent theme previews from affecting admin UI */
 .admin-app .theme-preview {

@@ -33,6 +33,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
             setTheme(data.theme.config)
             applyTheme(data.theme.config)
             setLastThemeId(data.theme.id)
+          } else {
+            console.log('Tema değişmedi, güncelleme atlandı:', data.theme.name)
           }
           return
         }
@@ -70,10 +72,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     loadTheme()
     
-    // Polling interval - her 2 saniyede tema kontrol et
+    // Polling interval - her 30 saniyede tema kontrol et (daha az aggressive)
     const interval = setInterval(() => {
       loadTheme()
-    }, 2000)
+    }, 30000)
     
     return () => clearInterval(interval)
   }, [customer])

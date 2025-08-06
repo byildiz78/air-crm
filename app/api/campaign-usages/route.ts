@@ -248,7 +248,7 @@ function getTopCampaign(usages: any[]): string | null {
 
   // Find the most used campaign
   const topCampaign = Object.entries(campaignCounts)
-    .sort(([,a], [,b]) => b - a)[0]
+    .sort(([,a], [,b]) => (b as number) - (a as number))[0]
 
   return topCampaign ? topCampaign[0] : null
 }

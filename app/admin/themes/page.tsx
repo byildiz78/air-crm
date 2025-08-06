@@ -70,16 +70,22 @@ export default function ThemesPage() {
           setEditingTheme(null) // Exit edit mode
           alert(`Tema "${options.name}" başarıyla güncellendi!${options.isDefault ? ' (Varsayılan tema olarak ayarlandı)' : ''}`)
         } else {
-          const errorData = await response.json()
-          alert(`Tema güncellenemedi: ${errorData.error || 'Bilinmeyen hata'}`)
+          const errorText = await response.text()
+          let errorData
+          try {
+            errorData = JSON.parse(errorText)
+          } catch {
+            errorData = { error: errorText }
+          }
+          console.error('Theme update error:', response.status, errorData)
+          alert(`Tema güncellenemedi: ${errorData.error || 'Bilinmeyen hata'} (Status: ${response.status})`)
         }
       } else {
-        // Create new theme
+        // Create new theme  
         const response = await fetch('/api/admin/themes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            restaurantId: 'default-restaurant-id',
             name: options.name,
             description: options.description,
             config: theme,
@@ -92,8 +98,15 @@ export default function ThemesPage() {
           await fetchSavedThemes()
           alert(`Tema "${options.name}" başarıyla oluşturuldu!${options.isDefault ? ' (Varsayılan tema olarak ayarlandı)' : ''}`)
         } else {
-          const errorData = await response.json()
-          alert(`Tema oluşturulamadı: ${errorData.error || 'Bilinmeyen hata'}`)
+          const errorText = await response.text()
+          let errorData
+          try {
+            errorData = JSON.parse(errorText)
+          } catch {
+            errorData = { error: errorText }
+          }
+          console.error('Theme create error:', response.status, errorData)
+          alert(`Tema oluşturulamadı: ${errorData.error || 'Bilinmeyen hata'} (Status: ${response.status})`)
         }
       }
     } catch (error) {

@@ -63,17 +63,20 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { 
-      restaurantId, 
       name, 
       config, 
+      description,
       isActive = true,
       isDefault = false 
     } = body
 
+    // Get restaurantId from session (for now use default)
+    const restaurantId = 'default-restaurant-id' // TODO: Get from user session
+
     // Validate required fields
-    if (!restaurantId || !name || !config) {
+    if (!name || !config) {
       return NextResponse.json(
-        { error: 'restaurantId, name and config are required' },
+        { error: 'name and config are required' },
         { status: 400 }
       )
     }
@@ -103,6 +106,7 @@ export async function POST(request: NextRequest) {
       theme = await prisma.customTheme.update({
         where: { id: existingTheme.id },
         data: {
+          description: description || null,
           config: config as any,
           isActive,
           isDefault,
@@ -115,6 +119,7 @@ export async function POST(request: NextRequest) {
         data: {
           restaurantId,
           name,
+          description: description || null,
           config: config as any,
           isActive,
           isDefault
