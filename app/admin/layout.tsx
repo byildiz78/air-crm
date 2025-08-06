@@ -3,6 +3,7 @@
 import { SessionProvider } from 'next-auth/react'
 import { AdminSidebar } from '@/components/admin/sidebar'
 import { AdminHeader } from '@/components/admin/header'
+import '@/app/admin.css' // Import admin-specific CSS
 
 export default function AdminLayout({
   children,
@@ -11,11 +12,7 @@ export default function AdminLayout({
 }) {
   return (
     <SessionProvider>
-      <div className="admin-app" style={{
-        fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif',
-        fontSize: '14px',
-        lineHeight: '1.5'
-      }}>
+      <div className="admin-app">
         <div className="flex h-screen bg-gray-50">
           <AdminSidebar />
           <div className="flex-1 flex flex-col overflow-hidden">

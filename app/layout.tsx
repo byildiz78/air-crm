@@ -1,4 +1,4 @@
-import './globals.css';
+import './globals.css'; // Only global shared styles
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'sonner';

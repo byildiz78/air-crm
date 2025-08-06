@@ -192,12 +192,9 @@ export function applyTheme(theme: ThemeConfig): void {
     return
   }
   
-  const cssVars = themeToCssVariables(theme)
-  
-  // Only apply if we're in mobile app context
-  const mobileApp = document.querySelector('.mobile-app')
-  if (!mobileApp) {
-    console.warn('applyTheme: Mobile app context not found, skipping theme application')
+  // Check if current path is admin and prevent theme application
+  if (window.location.pathname.startsWith('/admin')) {
+    console.warn('applyTheme: Admin path detected, skipping theme application')
     return
   }
   
@@ -208,11 +205,21 @@ export function applyTheme(theme: ThemeConfig): void {
     return
   }
   
-  // Apply to :root for mobile app CSS variables
+  // Only apply if we're in mobile app context
+  const mobileApp = document.querySelector('.mobile-app')
+  if (!mobileApp) {
+    console.warn('applyTheme: Mobile app context not found, skipping theme application')
+    return
+  }
+  
+  const cssVars = themeToCssVariables(theme)
+  
+  // Apply CSS variables to :root with mobile- prefix only
   const root = document.documentElement
   Object.entries(cssVars).forEach(([key, value]) => {
-    root.style.setProperty(key, value)
+    const mobileKey = `--mobile-${key.replace('--', '')}`
+    root.style.setProperty(mobileKey, value)
   })
   
-  console.log('Theme applied successfully:', theme.primary)
+  console.log('Theme applied successfully to mobile app:', theme.primary)
 }

@@ -27,15 +27,23 @@ export function LiveThemeEditor({ onSave, onCancel, initialTheme = defaultTheme,
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null)
   const [saveOptions, setSaveOptions] = useState({
     name: '',
     description: '',
     isDefault: false
   })
 
-  // Apply theme changes in real-time (only if mobile app context exists)
+  // Apply theme changes in real-time (NEVER apply in admin context)
   useEffect(() => {
     if (isPreviewMode && typeof window !== 'undefined') {
+      // NEVER apply dynamic themes in admin context
+      // Admin themes are for mobile preview only, not for changing admin UI
+      if (window.location.pathname.startsWith('/admin')) {
+        console.warn('LiveThemeEditor: Admin context - theme preview disabled for admin UI')
+        return
+      }
+      
       // Only apply theme if we're in a mobile app context
       const mobileApp = document.querySelector('.mobile-app')
       if (mobileApp) {
@@ -43,6 +51,11 @@ export function LiveThemeEditor({ onSave, onCancel, initialTheme = defaultTheme,
       }
     }
   }, [currentTheme, isPreviewMode])
+
+  // Set portal container after mount
+  useEffect(() => {
+    setPortalContainer(document.querySelector('.admin-app'))
+  }, [])
 
   // Detect changes
   useEffect(() => {
@@ -140,6 +153,43 @@ export function LiveThemeEditor({ onSave, onCancel, initialTheme = defaultTheme,
 
   return (
     <div className="space-y-6">
+      {isPreviewMode && (
+        <div className="theme-preview-container bg-gray-100 p-6 rounded-lg border">
+          <h3 className="text-lg font-semibold mb-4">Tema Önizlemesi</h3>
+          <div 
+            className="theme-preview bg-white rounded-lg p-6 shadow-sm"
+            style={themeToCssVariables(currentTheme) as React.CSSProperties}
+          >
+            <div className="space-y-4">
+              <div style={{ backgroundColor: currentTheme.background, color: currentTheme.textPrimary }} className="p-4 rounded-lg">
+                <h4 className="text-lg font-bold mb-2" style={{ color: currentTheme.primary }}>Örnek Başlık</h4>
+                <p className="mb-3" style={{ color: currentTheme.textSecondary }}>Bu bir örnek açıklama metnidir.</p>
+                <div className="flex gap-2">
+                  <div 
+                    className="px-4 py-2 rounded text-white font-medium"
+                    style={{ backgroundColor: currentTheme.primary }}
+                  >
+                    Ana Buton
+                  </div>
+                  <div 
+                    className="px-4 py-2 rounded text-white font-medium"
+                    style={{ backgroundColor: currentTheme.secondary }}
+                  >
+                    İkincil Buton
+                  </div>
+                  <div 
+                    className="px-4 py-2 rounded text-white font-medium"
+                    style={{ backgroundColor: currentTheme.accent }}
+                  >
+                    Vurgu Buton
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <Card>
         <CardHeader>
@@ -188,7 +238,7 @@ export function LiveThemeEditor({ onSave, onCancel, initialTheme = defaultTheme,
                     <SelectTrigger className="w-40">
                       <SelectValue placeholder="Hazır Tema" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent container={portalContainer}>
                       <SelectItem value="default">Varsayılan</SelectItem>
                       <SelectItem value="burger-king">Burger King</SelectItem>
                       <SelectItem value="starbucks">Starbucks</SelectItem>
@@ -419,7 +469,7 @@ export function LiveThemeEditor({ onSave, onCancel, initialTheme = defaultTheme,
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent container={portalContainer}>
                           <SelectItem value="none">Yok</SelectItem>
                           <SelectItem value="sm">Küçük</SelectItem>
                           <SelectItem value="md">Orta</SelectItem>
@@ -439,7 +489,7 @@ export function LiveThemeEditor({ onSave, onCancel, initialTheme = defaultTheme,
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent container={portalContainer}>
                           <SelectItem value="none">Yok</SelectItem>
                           <SelectItem value="sm">Küçük</SelectItem>
                           <SelectItem value="md">Orta</SelectItem>

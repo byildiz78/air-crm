@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { Suspense } from 'react'
-import '@/app/globals.css'
+import '@/app/mobile.css' // Import mobile-specific CSS
 import ErrorBoundary from '@/components/mobile/ui/ErrorBoundary'
 import { SuspenseFallback } from '@/components/mobile/ui/LoadingSpinner'
 import { GlobalErrorHandler } from '@/components/mobile/ui/GlobalErrorHandler'
@@ -53,12 +53,7 @@ export default function MobileLayout({
           <ToastProvider>
             <ErrorBoundary>
               <Suspense fallback={<SuspenseFallback />}>
-                <div className="mobile-app" style={{
-                  fontFamily: 'var(--font-family, Inter, system-ui, sans-serif)',
-                  isolation: 'isolate',
-                  position: 'relative',
-                  zIndex: 1
-                }}>
+                <div className="mobile-app">
                   <main id="main-content">
                     {children}
                   </main>
