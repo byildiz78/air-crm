@@ -69,6 +69,11 @@ const adminMiddleware = withAuth(
 export default function combinedMiddleware(req: NextRequest) {
   const { pathname } = req.nextUrl
   
+  // Skip middleware for NextAuth routes - they handle their own auth
+  if (pathname.startsWith('/api/auth/')) {
+    return NextResponse.next()
+  }
+  
   // Use withAuth middleware for admin and API routes
   if (pathname.startsWith('/admin') || (pathname.startsWith('/api') && !pathname.startsWith('/api/mobile/'))) {
     return (adminMiddleware as any)(req)
