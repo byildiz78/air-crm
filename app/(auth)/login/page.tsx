@@ -22,20 +22,41 @@ export default function LoginPage() {
     setIsLoading(true)
     setError('')
 
+    console.log('=== LOGIN ATTEMPT START ===')
+    console.log('Email:', email)
+    console.log('Password length:', password.length)
+    console.log('Current URL:', window.location.href)
+    console.log('NEXTAUTH_URL should be:', window.location.origin)
+
     try {
+      console.log('Calling signIn...')
       const result = await signIn('credentials', {
         email,
         password,
         redirect: false,
       })
 
+      console.log('SignIn result:', result)
+      console.log('Result error:', result?.error)
+      console.log('Result status:', result?.status)
+      console.log('Result ok:', result?.ok)
+      console.log('Result url:', result?.url)
+
       if (result?.error) {
+        console.log('Login failed with error:', result.error)
         setError('Geçersiz email veya şifre')
-      } else {
+      } else if (result?.ok) {
+        console.log('Login successful, redirecting to /admin')
         router.push('/admin')
+      } else {
+        console.log('Unexpected result:', result)
+        setError('Beklenmeyen hata oluştu')
       }
     } catch (error) {
-      setError('Bir hata oluştu')
+      console.error('Login error caught:', error)
+      console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack')
+      setError('Bir hata oluştu: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata'))
     } finally {
       setIsLoading(false)
     }

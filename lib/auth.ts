@@ -14,42 +14,59 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
+        console.log('=== NEXTAUTH AUTHORIZE START ===')
         console.log('Authorize called with:', credentials?.email)
+        console.log('Environment NEXTAUTH_URL:', process.env.NEXTAUTH_URL)
+        console.log('Environment DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET')
         
         if (!credentials?.email || !credentials?.password) {
-          console.log('Missing credentials')
+          console.log('Missing credentials - email:', !!credentials?.email, 'password:', !!credentials?.password)
           return null
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
+        try {
+          console.log('Looking up user in database...')
+          const user = await prisma.user.findUnique({
+            where: {
+              email: credentials.email
+            }
+          })
+          
+          console.log('User found:', user?.email, 'Has password:', !!user?.password)
+          console.log('User ID:', user?.id)
+          console.log('User role:', user?.role)
+
+          if (!user || !user.password) {
+            console.log('User not found or no password')
+            return null
           }
-        })
-        
-        console.log('User found:', user?.email, 'Has password:', !!user?.password)
 
-        if (!user || !user.password) {
-          console.log('User not found or no password')
+          console.log('Comparing passwords...')
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password,
+            user.password
+          )
+          
+          console.log('Password valid:', isPasswordValid)
+
+          if (!isPasswordValid) {
+            console.log('Password invalid, returning null')
+            return null
+          }
+
+          const returnUser = {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+          }
+          
+          console.log('Authorization successful, returning user:', returnUser)
+          return returnUser
+          
+        } catch (error) {
+          console.error('Database error in authorize:', error)
           return null
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        )
-        
-        console.log('Password valid:', isPasswordValid)
-
-        if (!isPasswordValid) {
-          return null
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
         }
       }
     })
