@@ -22,7 +22,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     
     try {
       // Try to fetch default theme from database first
-      const response = await fetch('/api/mobile/theme/default?' + Date.now()) // Cache bust
+      // Use relative URL to work on any domain
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+      const response = await fetch(`${baseUrl}/api/mobile/theme/default?` + Date.now()) // Cache bust
       
       if (response.ok) {
         const data = await response.json()
