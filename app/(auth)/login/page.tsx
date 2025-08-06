@@ -50,7 +50,7 @@ export default function LoginPage() {
         email,
         password,
         redirect: false,
-        csrfToken,
+        callbackUrl: '/admin'
       })
 
       console.log('SignIn result:', result)
