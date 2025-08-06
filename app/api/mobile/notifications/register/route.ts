@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         data: {
           p256dhKey: validatedData.subscription.keys.p256dh,
           authKey: validatedData.subscription.keys.auth,
-          platform: validatedData.platform,
+          platform: validatedData.platform as any,
           userAgent: validatedData.userAgent,
           isActive: true,
           lastUsedAt: new Date()
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
           endpoint: validatedData.subscription.endpoint,
           p256dhKey: validatedData.subscription.keys.p256dh,
           authKey: validatedData.subscription.keys.auth,
-          platform: validatedData.platform,
+          platform: validatedData.platform as any,
           userAgent: validatedData.userAgent,
           isActive: true,
           lastUsedAt: new Date()

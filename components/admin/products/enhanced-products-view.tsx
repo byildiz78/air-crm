@@ -160,7 +160,7 @@ export function EnhancedProductsView({
   }
 
   const getUniqueCategories = () => {
-    const categories = [...new Set(products.map(p => p.category))]
+    const categories = Array.from(new Set(products.map(p => p.category)))
     return categories.sort()
   }
 
@@ -398,7 +398,7 @@ export function EnhancedProductsView({
                           </Badge>
                         </div>
                         <div className="text-xs text-gray-500">
-                          {formatDate(product.createdAt)}
+                          {formatDate(product.createdAt instanceof Date ? product.createdAt.toISOString() : product.createdAt)}
                         </div>
                       </div>
                       
@@ -494,7 +494,7 @@ export function EnhancedProductsView({
                       
                       {/* Date */}
                       <div className="text-center text-sm shrink-0 min-w-[80px]">
-                        <div className="text-gray-600 font-medium">{formatDate(product.createdAt)}</div>
+                        <div className="text-gray-600 font-medium">{formatDate(product.createdAt instanceof Date ? product.createdAt.toISOString() : product.createdAt)}</div>
                         <div className="text-xs text-gray-500">eklendi</div>
                       </div>
                       
@@ -566,7 +566,7 @@ export function EnhancedProductsView({
                 
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let page;
+                    let page: number;
                     if (totalPages <= 5) {
                       page = i + 1;
                     } else if (currentPage <= 3) {

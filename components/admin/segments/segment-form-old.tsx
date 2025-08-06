@@ -40,10 +40,7 @@ interface SegmentFormProps {
   isLoading?: boolean
 }
 
-interface ExtendedSegment extends Segment {
-  isAutomatic?: boolean
-  criteria?: string
-}
+type ExtendedSegment = Segment
 export function SegmentForm({ 
   open, 
   onOpenChange, 

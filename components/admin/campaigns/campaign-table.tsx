@@ -25,7 +25,10 @@ import { tr } from 'date-fns/locale'
 interface CampaignWithDetails extends Campaign {
   restaurant: { name: string }
   segments: { name: string }[]
-  _count: { usages: number }
+  _count: { 
+    usages?: number
+    transactions?: number 
+  }
 }
 
 interface CampaignTableProps {
@@ -162,7 +165,7 @@ export function CampaignTable({
                 <TableCell>
                   <div className="flex items-center space-x-1">
                     <BarChart3 className="h-4 w-4 text-gray-400" />
-                    <span className="font-medium">{campaign._count.usages}</span>
+                    <span className="font-medium">{(campaign._count.usages || 0) + (campaign._count.transactions || 0)}</span>
                   </div>
                   {campaign.maxUsage && (
                     <div className="text-xs text-gray-500">

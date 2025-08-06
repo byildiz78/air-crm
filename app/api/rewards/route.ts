@@ -104,8 +104,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = rewardSchema.parse(body)
 
-    // Remove restaurantId from data as it's not in the Reward model
-    const { restaurantId, ...rewardData } = validatedData
+    // Add restaurantId from session or validated data
+    const rewardData = {
+      ...validatedData,
+      restaurantId: validatedData.restaurantId || (session.user as any).restaurantId || 'default-restaurant-id'
+    }
 
     const reward = await prisma.reward.create({
       data: rewardData,

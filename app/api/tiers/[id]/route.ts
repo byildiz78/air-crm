@@ -31,7 +31,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const tier = await prisma.Tier.findUnique({
+    const tier = await prisma.tier.findUnique({
       where: { id: params.id },
       include: {
         customers: {
@@ -97,7 +97,7 @@ export async function PUT(
     const validatedData = updateTierSchema.parse(body)
 
     // Check if tier exists
-    const existingTier = await prisma.Tier.findUnique({
+    const existingTier = await prisma.tier.findUnique({
       where: { id: params.id }
     })
 
@@ -107,7 +107,7 @@ export async function PUT(
 
     // Check for name conflicts if name is being updated
     if (validatedData.name && validatedData.name !== existingTier.name) {
-      const nameConflict = await prisma.Tier.findFirst({
+      const nameConflict = await prisma.tier.findFirst({
         where: {
           name: validatedData.name,
           restaurantId: existingTier.restaurantId,
@@ -122,7 +122,7 @@ export async function PUT(
 
     // Check for level conflicts if level is being updated
     if (validatedData.level !== undefined && validatedData.level !== existingTier.level) {
-      const levelConflict = await prisma.Tier.findFirst({
+      const levelConflict = await prisma.tier.findFirst({
         where: {
           level: validatedData.level,
           restaurantId: existingTier.restaurantId,
@@ -140,7 +140,7 @@ export async function PUT(
       updateData.specialFeatures = JSON.stringify(validatedData.specialFeatures)
     }
 
-    const tier = await prisma.Tier.update({
+    const tier = await prisma.tier.update({
       where: { id: params.id },
       data: updateData,
       include: {
@@ -178,7 +178,7 @@ export async function DELETE(
     }
 
     // Check if tier exists
-    const tier = await prisma.Tier.findUnique({
+    const tier = await prisma.tier.findUnique({
       where: { id: params.id },
       include: {
         _count: {
@@ -200,7 +200,7 @@ export async function DELETE(
       }, { status: 400 })
     }
 
-    await prisma.Tier.delete({
+    await prisma.tier.delete({
       where: { id: params.id }
     })
 

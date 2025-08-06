@@ -488,11 +488,11 @@ model NotificationLog {
   title             String
   body              String
   type              NotificationType @default(GENERAL)
-  targetCustomerIds String // JSON array of customer IDs
+  targetCustomerIds String           // JSON array of customer IDs
   sentCount         Int              @default(0)
   failedCount       Int              @default(0)
-  webPushResponse   String? // JSON response from web-push
-  fcmResponse       String? // Legacy field, can be removed later
+  webPushResponse   String?          // JSON response from web-push
+  fcmResponse       String?          // Legacy field, can be removed later
   createdAt         DateTime         @default(now())
 }
 

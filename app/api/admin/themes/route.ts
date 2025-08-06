@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all themes - handle case where table might be empty
-    let themes = []
+    let themes: any[] = []
     try {
       themes = await prisma.customTheme.findMany({
         include: {

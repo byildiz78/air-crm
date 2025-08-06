@@ -14,7 +14,8 @@ import {
   Zap,
   Gift,
   Users,
-  Check
+  Check,
+  Loader2
 } from 'lucide-react'
 import { Campaign } from '@prisma/client'
 import { toast } from 'sonner'
@@ -35,20 +36,20 @@ const campaignSchema = z.object({
   
   // Trigger conditions
   triggerType: z.enum(['purchase_amount', 'product_purchase', 'category_purchase', 'visit_count', 'birthday']),
-  minPurchase: z.number().min(0).optional(),
+  minPurchase: z.number().min(0).optional().nullable(),
   targetProducts: z.array(z.string()).optional(),
   targetCategories: z.array(z.string()).optional(),
-  requiredQuantity: z.number().min(1).optional(),
-  visitCount: z.number().min(1).optional(),
+  requiredQuantity: z.number().min(1).optional().nullable(),
+  visitCount: z.number().min(1).optional().nullable(),
   
   // Rewards
   rewardType: z.enum(['discount_percentage', 'discount_fixed', 'free_product', 'points_multiplier', 'free_shipping']),
-  discountValue: z.number().min(0).optional(),
+  discountValue: z.number().min(0).optional().nullable(),
   freeProducts: z.array(z.string()).optional(),
-  pointsMultiplier: z.number().min(1).optional(),
+  pointsMultiplier: z.number().min(1).optional().nullable(),
   
   // Targeting
-  maxUsage: z.number().min(1).optional(),
+  maxUsage: z.number().min(1).optional().nullable(),
   maxUsagePerCustomer: z.number().min(1).default(1),
   segmentIds: z.array(z.string()).optional(),
   sendNotification: z.boolean().default(true),
@@ -60,6 +61,12 @@ const campaignSchema = z.object({
     return false
   }
   if (data.triggerType === 'visit_count' && !data.visitCount) {
+    return false
+  }
+  if (data.triggerType === 'product_purchase' && !data.requiredQuantity) {
+    return false
+  }
+  if (data.triggerType === 'category_purchase' && !data.requiredQuantity) {
     return false
   }
   
@@ -91,6 +98,13 @@ export function SimpleCampaignModal({
   onSubmit, 
   isLoading 
 }: SimpleCampaignModalProps) {
+  console.log('=== SimpleCampaignModal RENDER ===', { open, campaign, isLoading })
+  
+  // Log when open prop changes
+  useEffect(() => {
+    console.log('=== MODAL OPEN PROP CHANGED ===', open)
+  }, [open])
+  
   const [products, setProducts] = useState<Product[]>([])
   const [segments, setSegments] = useState<Segment[]>([])
   const [categories, setCategories] = useState<string[]>([])
@@ -117,7 +131,13 @@ export function SimpleCampaignModal({
       maxUsagePerCustomer: 1,
       sendNotification: true,
       triggerType: 'purchase_amount',
-      rewardType: 'discount_percentage'
+      rewardType: 'discount_percentage',
+      requiredQuantity: 1,
+      minPurchase: undefined,
+      discountValue: 0,
+      pointsMultiplier: 1,
+      maxUsage: undefined,
+      visitCount: undefined
     }
   })
 
@@ -149,7 +169,7 @@ export function SimpleCampaignModal({
       }
       
       // Discount type'ına göre reward type belirle
-      if (campaign.type === 'LOYALTY_POINTS' || campaign.pointsMultiplier > 1) {
+      if (campaign.type === 'LOYALTY_POINTS' || (campaign.pointsMultiplier && campaign.pointsMultiplier > 1)) {
         rewardType = 'points_multiplier'
       } else if (campaign.freeProducts || campaign.getSpecificProduct) {
         rewardType = 'free_product'
@@ -242,14 +262,24 @@ export function SimpleCampaignModal({
   }, [campaign, reset])
 
   const fetchProducts = async () => {
+    console.log('=== FETCHING PRODUCTS ===')
     try {
       const response = await fetch('/api/products?limit=100')
+      console.log('Products API response status:', response.ok)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log('=== PRODUCTS DATA ===', data)
+        console.log('Products count:', data.products?.length)
+        
         setProducts(data.products || [])
         
-        const uniqueCategories = [...new Set(data.products?.map((p: Product) => p.category) || [])]
+        const uniqueCategories = Array.from(new Set(data.products?.map((p: Product) => p.category).filter(Boolean) || [])) as string[]
         setCategories(uniqueCategories)
+        
+        console.log('=== PRODUCTS AND CATEGORIES SET ===')
+        console.log('Products:', data.products?.length)
+        console.log('Categories:', uniqueCategories)
       }
     } catch (error) {
       console.error('Error fetching products:', error)
@@ -269,6 +299,13 @@ export function SimpleCampaignModal({
   }
 
   const handleFormSubmit = async (data: CampaignFormData) => {
+    console.log('=== KAMPANYA FORM SUBMIT BAŞLADI ===')
+    console.log('Form data:', data)
+    console.log('Campaign (edit mode):', campaign)
+    console.log('Selected trigger type:', data.triggerType)
+    console.log('Selected products:', selectedProducts)
+    console.log('Required quantity:', data.requiredQuantity)
+    
     try {
       // Trigger ve reward type'a göre uygun campaign type belirle
       let campaignType = 'DISCOUNT'
@@ -285,6 +322,15 @@ export function SimpleCampaignModal({
         campaignType = 'DISCOUNT'
       }
 
+      console.log('Campaign type seçildi:', campaignType)
+      
+      // Validation for product_purchase type
+      if (data.triggerType === 'product_purchase' && selectedProducts.length === 0) {
+        console.error('=== VALIDATION ERROR: No products selected for product_purchase campaign ===')
+        toast.error('Ürün seçimi yapılmadan kampanya oluşturulamaz')
+        return
+      }
+      
       const submitData = {
         name: data.name,
         description: data.description,
@@ -293,9 +339,13 @@ export function SimpleCampaignModal({
         endDate: data.endDate,
         isActive: data.isActive,
         
+        // Required restaurant ID (using default for now)
+        restaurantId: 'default-restaurant-id', // TODO: Get this from context/session
+        
         // Discount settings
         discountType: data.rewardType === 'discount_percentage' ? 'PERCENTAGE' : 
-                     data.rewardType === 'discount_fixed' ? 'FIXED_AMOUNT' : 'PERCENTAGE',
+                     data.rewardType === 'discount_fixed' ? 'FIXED_AMOUNT' : 
+                     data.rewardType === 'free_product' ? 'FREE_ITEM' : 'PERCENTAGE',
         discountValue: data.discountValue || 0,
         
         // Trigger conditions
@@ -319,22 +369,63 @@ export function SimpleCampaignModal({
         
         // Notifications
         sendNotification: data.sendNotification,
-        notificationTitle: data.notificationTitle || null,
-        notificationMessage: data.notificationMessage || null,
+        notificationTitle: data.notificationTitle || undefined,
+        notificationMessage: data.notificationMessage || undefined,
         
         // Targeting
         segmentIds: selectedSegments
       }
 
       console.log('Simple campaign submit data:', submitData)
+      console.log('=== SUBMIT DATA HAZIRLANDI ===')
+      console.log('Submit data:', submitData)
+      console.log('onSubmit fonksiyonu çağrılıyor...')
+      
       await onSubmit(submitData)
+      
+      console.log('=== KAMPANYA BAŞARIYLA KAYDEDİLDİ ===')
     } catch (error) {
+      console.error('=== KAMPANYA KAYIT HATASI ===')
       console.error('Error submitting campaign:', error)
       toast.error('Kampanya kaydedilirken hata oluştu')
     }
   }
 
+  const validateCurrentStep = async () => {
+    console.log('=== VALIDATING STEP ===', currentStep)
+    const fieldsToValidate = getFieldsForStep(currentStep)
+    console.log('Fields to validate:', fieldsToValidate)
+    
+    const isValid = await trigger(fieldsToValidate)
+    console.log('Validation result:', isValid)
+    console.log('Current errors:', errors)
+    
+    return isValid
+  }
+
+  const getFieldsForStep = (step: number): (keyof CampaignFormData)[] => {
+    switch (step) {
+      case 1:
+        return ['name', 'description', 'startDate', 'endDate']
+      case 2:
+        return ['triggerType', 'minPurchase', 'visitCount']
+      case 3:
+        return ['rewardType', 'discountValue', 'pointsMultiplier']
+      case 4:
+        return ['maxUsage', 'maxUsagePerCustomer']
+      default:
+        return []
+    }
+  }
+
   const nextStep = async () => {
+    console.log('=== NEXT STEP CLICKED ===')
+    console.log('Current step:', currentStep)
+    console.log('Current form values:', watch())
+    console.log('Selected trigger type:', selectedTriggerType)
+    console.log('Selected products:', selectedProducts)
+    console.log('Selected categories:', selectedCategories)
+    
     let fieldsToValidate: (keyof CampaignFormData)[] = []
     
     // Her adım için sadece o adımın alanlarını validate et
@@ -344,15 +435,23 @@ export function SimpleCampaignModal({
         break
       case 2:
         fieldsToValidate = ['triggerType']
+        console.log('=== STEP 2 VALIDATION ===')
+        console.log('Trigger type:', selectedTriggerType)
+        
         // Trigger type'a göre ilgili alanları ekle
         if (selectedTriggerType === 'purchase_amount') {
           fieldsToValidate.push('minPurchase')
         } else if (selectedTriggerType === 'visit_count') {
           fieldsToValidate.push('visitCount')
         } else if (selectedTriggerType === 'product_purchase') {
+          console.log('=== PRODUCT PURCHASE VALIDATION ===')
+          console.log('Required quantity value:', watch('requiredQuantity'))
+          console.log('Selected products:', selectedProducts)
+          
           fieldsToValidate.push('requiredQuantity')
           // Ürün seçimi yapılmış mı kontrol et
           if (selectedProducts.length === 0) {
+            console.error('No products selected!')
             toast.error('En az bir ürün seçmelisiniz')
             return
           }
@@ -385,7 +484,11 @@ export function SimpleCampaignModal({
         fieldsToValidate = []
     }
     
+    console.log('=== FIELDS TO VALIDATE ===', fieldsToValidate)
     const isValid = fieldsToValidate.length === 0 || await trigger(fieldsToValidate)
+    console.log('=== VALIDATION RESULT ===', isValid)
+    console.log('=== VALIDATION ERRORS ===', errors)
+    
     if (isValid && currentStep < 4) {
       setCurrentStep(currentStep + 1)
     }
@@ -398,13 +501,19 @@ export function SimpleCampaignModal({
   }
 
   const addToSelection = (item: string, list: string[], setList: (list: string[]) => void) => {
+    console.log('=== ADD TO SELECTION ===', { item, currentList: list })
     if (!list.includes(item)) {
-      setList([...list, item])
+      const newList = [...list, item]
+      setList(newList)
+      console.log('=== SELECTION UPDATED ===', newList)
     }
   }
 
   const removeFromSelection = (item: string, list: string[], setList: (list: string[]) => void) => {
-    setList(list.filter(i => i !== item))
+    console.log('=== REMOVE FROM SELECTION ===', { item, currentList: list })
+    const newList = list.filter(i => i !== item)
+    setList(newList)
+    console.log('=== SELECTION UPDATED ===', newList)
   }
 
   if (!open) return null
@@ -436,9 +545,21 @@ export function SimpleCampaignModal({
     addToSelection,
     removeFromSelection
   }
-
+  
+  // Debug logging (removed useEffect to avoid hooks order issues)
+  if (open) {
+    console.log('=== COMPONENT STATE ===', {
+      selectedProducts,
+      selectedCategories,
+      productsCount: products.length,
+      currentStep
+    })
+  }
+  
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
+    <>
+      {open && (
+        <div className="fixed inset-0 z-50 bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
       {/* Compact Header */}
       <div className="border-b border-slate-200/60 bg-white/90 backdrop-blur-xl z-10 shadow-sm flex-shrink-0">
         <div className="flex items-center justify-between px-6 py-4">
@@ -468,6 +589,7 @@ export function SimpleCampaignModal({
           
           <div className="flex items-center space-x-2">
             <Button 
+              type="button"
               variant="outline" 
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
@@ -476,26 +598,6 @@ export function SimpleCampaignModal({
             >
               İptal
             </Button>
-            {currentStep === 4 && (
-              <Button 
-                onClick={handleSubmit(handleFormSubmit)}
-                disabled={isLoading}
-                size="sm"
-                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1"></div>
-                    Kaydediliyor...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-3 w-3 mr-1" />
-                    {campaign ? 'Güncelle' : 'Oluştur'}
-                  </>
-                )}
-              </Button>
-            )}
           </div>
         </div>
 
@@ -548,23 +650,35 @@ export function SimpleCampaignModal({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="max-w-3xl mx-auto p-6">
-          <form onSubmit={handleSubmit(handleFormSubmit)}>
+      <form 
+        onSubmit={(e) => {
+          console.log('=== FORM ONSUBMIT TRIGGERED ===')
+          console.log('Form validation errors:', errors)
+          console.log('All form values:', watch())
+          console.log('Selected trigger type:', watch('triggerType'))
+          console.log('Required quantity:', watch('requiredQuantity'))
+          console.log('Selected products state:', selectedProducts)
+          console.log('Selected categories state:', selectedCategories)
+          console.log('Current step:', currentStep)
+          handleSubmit(handleFormSubmit)(e)
+        }} 
+        className="flex-1 flex flex-col overflow-y-auto min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="max-w-3xl mx-auto p-6">
             <div className="animate-in slide-in-from-right-5 fade-in duration-300">
               {currentStep === 1 && <CampaignFormStep1 {...commonProps} />}
               {currentStep === 2 && <CampaignFormStep2 {...commonProps} />}
               {currentStep === 3 && <CampaignFormStep3 {...commonProps} />}
               {currentStep === 4 && <CampaignFormStep4 {...commonProps} />}
             </div>
-          </form>
+          </div>
         </div>
-      </div>
 
       {/* Compact Footer Navigation */}
       <div className="border-t border-slate-200/60 bg-white/90 backdrop-blur-xl px-6 py-4 shadow-sm flex-shrink-0">
         <div className="max-w-3xl mx-auto flex justify-between items-center">
           <Button
+            type="button"
             variant="outline"
             onClick={prevStep}
             disabled={currentStep === 1}
@@ -579,28 +693,43 @@ export function SimpleCampaignModal({
             {currentStep} / 4
           </div>
 
-          <Button
-            onClick={nextStep}
-            disabled={currentStep === 4}
-            size="sm"
-            className={`bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 ${
-              currentStep === 4 ? 'opacity-50' : ''
-            }`}
-          >
-            {currentStep === 4 ? (
-              <>
-                <Check className="h-4 w-4 mr-1" />
-                Bitti
-              </>
-            ) : (
-              <>
+          <div className="flex items-center space-x-2">
+            {currentStep < 4 ? (
+              <Button
+                type="button"
+                onClick={nextStep}
+                size="sm"
+                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              >
                 Sonraki
                 <ArrowRight className="h-4 w-4 ml-1" />
-              </>
+              </Button>
+            ) : (
+              <Button
+                type="submit"
+                disabled={isLoading}
+                size="sm"
+                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    Kaydediliyor...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-1" />
+                    Kaydet
+                  </>
+                )}
+              </Button>
             )}
-          </Button>
+          </div>
         </div>
       </div>
-    </div>
+      </form>
+        </div>
+      )}
+    </>
   )
 }

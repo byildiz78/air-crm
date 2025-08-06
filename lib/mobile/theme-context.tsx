@@ -43,9 +43,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       // Fallback: use customer-specific theme or default
       if (customer?.restaurant) {
         // Try customer's specific theme
-        if (customer.theme) {
-          setTheme(customer.theme.config)
-          applyTheme(customer.theme.config)
+        if ((customer as any).theme) {
+          setTheme((customer as any).theme.config)
+          applyTheme((customer as any).theme.config)
         } else {
           // Use mock restaurant theme
           const restaurantTheme = getRestaurantTheme(customer.restaurant.name.toLowerCase().replace(/\s+/g, '-'))

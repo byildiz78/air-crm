@@ -64,7 +64,7 @@ export default function ProductsPage() {
       // Calculate stats
       const activeProducts = data.products.filter((p: ProductWithDetails) => p.isActive)
       const inactiveProducts = data.products.filter((p: ProductWithDetails) => !p.isActive)
-      const categories = [...new Set(data.products.map((p: ProductWithDetails) => p.category))]
+      const categories = Array.from(new Set(data.products.map((p: ProductWithDetails) => p.category)))
       const averagePrice = data.products.length > 0 
         ? data.products.reduce((sum: number, p: ProductWithDetails) => sum + p.price, 0) / data.products.length
         : 0

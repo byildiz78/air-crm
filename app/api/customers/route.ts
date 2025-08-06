@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
             { email: { contains: search, mode: 'insensitive' as const } }
           ]
         } : {},
-        level ? { level } : {}
+        level ? { level: level as any } : {}
       ]
     }
 

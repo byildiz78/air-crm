@@ -447,7 +447,7 @@ export function UserManagement() {
                       {/* Date */}
                       <div className="flex items-center gap-2 text-xs text-gray-500 border-t pt-3">
                         <Calendar className="h-3 w-3" />
-                        <span>{formatDate(user.createdAt)} tarihinde katıldı</span>
+                        <span>{formatDate(user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt)} tarihinde katıldı</span>
                       </div>
                       
                       {/* Action Buttons */}
@@ -508,7 +508,7 @@ export function UserManagement() {
                       
                       {/* Date */}
                       <div className="text-center text-sm shrink-0 min-w-[80px]">
-                        <div className="text-gray-600 font-medium">{formatDate(user.createdAt)}</div>
+                        <div className="text-gray-600 font-medium">{formatDate(user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt)}</div>
                         <div className="text-xs text-gray-500">katılım</div>
                       </div>
                       
@@ -563,7 +563,7 @@ export function UserManagement() {
                 
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let page;
+                    let page: number;
                     if (totalPages <= 5) {
                       page = i + 1;
                     } else if (currentPage <= 3) {

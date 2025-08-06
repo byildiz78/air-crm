@@ -70,7 +70,7 @@ export function usePerformanceMonitor() {
           console.log('LCP:', entry.startTime)
         }
         if (entry.entryType === 'first-input') {
-          console.log('FID:', entry.processingStart - entry.startTime)
+          console.log('FID:', (entry as any).processingStart - entry.startTime)
         }
         if (entry.entryType === 'layout-shift') {
           if (!(entry as any).hadRecentInput) {
@@ -87,11 +87,11 @@ export function usePerformanceMonitor() {
 }
 
 // Bundle optimizer - dynamic imports wrapper
-export function dynamicImport<T>(
-  importFn: () => Promise<T>,
-  fallback?: React.ComponentType
+export function dynamicImport<T extends React.ComponentType<any>>(
+  importFn: () => Promise<{ default: T }>,
+  fallback?: () => JSX.Element
 ) {
-  return dynamic(importFn, {
+  return dynamic(importFn as any, {
     loading: fallback || (() => <div className="animate-pulse bg-gray-200 h-8 rounded" />),
     ssr: false,
   })

@@ -48,10 +48,7 @@ interface SegmentFormProps {
   isLoading?: boolean
 }
 
-interface ExtendedSegment extends Segment {
-  isAutomatic?: boolean
-  criteria?: string
-}
+type ExtendedSegment = Segment
 
 const periodOptions = [
   { value: 'last_30_days', label: 'Son 30 Gün', icon: Clock },
@@ -253,11 +250,10 @@ export function SegmentForm({
                         // Otomatik segment açıldığında boş criteria oluştur
                         setSegmentCriteria({
                           period: 'last_90_days',
-                          totalSpent: {},
-                          transactionCount: {},
                           averageOrderValue: {},
-                          daysSinceLastPurchase: {},
-                          customerLevel: undefined
+                          purchaseCount: {},
+                          daysSinceFirstPurchase: {},
+                          daysSinceLastPurchase: {}
                         })
                       }
                     }}
@@ -314,15 +310,15 @@ export function SegmentForm({
                   {/* Sol Kolon */}
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Toplam Harcama</Label>
+                      <Label>Ortalama Sipariş Değeri</Label>
                       <div className="grid grid-cols-2 gap-2">
                         <Input
                           type="number"
                           placeholder="Min"
-                          value={segmentCriteria?.totalSpent?.min || ''}
+                          value={segmentCriteria?.averageOrderValue?.min || ''}
                           onChange={(e) => updateCriteria({ 
-                            totalSpent: { 
-                              ...segmentCriteria?.totalSpent, 
+                            averageOrderValue: { 
+                              ...segmentCriteria?.averageOrderValue, 
                               min: e.target.value ? Number(e.target.value) : undefined 
                             }
                           })}
@@ -330,10 +326,10 @@ export function SegmentForm({
                         <Input
                           type="number"
                           placeholder="Max"
-                          value={segmentCriteria?.totalSpent?.max || ''}
+                          value={segmentCriteria?.averageOrderValue?.max || ''}
                           onChange={(e) => updateCriteria({ 
-                            totalSpent: { 
-                              ...segmentCriteria?.totalSpent, 
+                            averageOrderValue: { 
+                              ...segmentCriteria?.averageOrderValue, 
                               max: e.target.value ? Number(e.target.value) : undefined 
                             }
                           })}
@@ -375,10 +371,10 @@ export function SegmentForm({
                         <Input
                           type="number"
                           placeholder="Min"
-                          value={segmentCriteria?.lastPurchaseDays?.min || ''}
+                          value={segmentCriteria?.daysSinceLastPurchase?.min || ''}
                           onChange={(e) => updateCriteria({ 
-                            lastPurchaseDays: { 
-                              ...segmentCriteria?.lastPurchaseDays, 
+                            daysSinceLastPurchase: { 
+                              ...segmentCriteria?.daysSinceLastPurchase, 
                               min: e.target.value ? Number(e.target.value) : undefined 
                             }
                           })}
@@ -386,10 +382,10 @@ export function SegmentForm({
                         <Input
                           type="number"
                           placeholder="Max"
-                          value={segmentCriteria?.lastPurchaseDays?.max || ''}
+                          value={segmentCriteria?.daysSinceLastPurchase?.max || ''}
                           onChange={(e) => updateCriteria({ 
-                            lastPurchaseDays: { 
-                              ...segmentCriteria?.lastPurchaseDays, 
+                            daysSinceLastPurchase: { 
+                              ...segmentCriteria?.daysSinceLastPurchase, 
                               max: e.target.value ? Number(e.target.value) : undefined 
                             }
                           })}
@@ -429,15 +425,15 @@ export function SegmentForm({
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Alışveriş Sıklığı (Gün)</Label>
+                      <Label>İlk Ziyaretten Bu Yana (Gün)</Label>
                       <div className="grid grid-cols-2 gap-2">
                         <Input
                           type="number"
                           placeholder="Min"
-                          value={segmentCriteria?.purchaseFrequency?.min || ''}
+                          value={segmentCriteria?.daysSinceFirstPurchase?.min || ''}
                           onChange={(e) => updateCriteria({ 
-                            purchaseFrequency: { 
-                              ...segmentCriteria?.purchaseFrequency, 
+                            daysSinceFirstPurchase: { 
+                              ...segmentCriteria?.daysSinceFirstPurchase, 
                               min: e.target.value ? Number(e.target.value) : undefined 
                             }
                           })}
@@ -445,10 +441,10 @@ export function SegmentForm({
                         <Input
                           type="number"
                           placeholder="Max"
-                          value={segmentCriteria?.purchaseFrequency?.max || ''}
+                          value={segmentCriteria?.daysSinceFirstPurchase?.max || ''}
                           onChange={(e) => updateCriteria({ 
-                            purchaseFrequency: { 
-                              ...segmentCriteria?.purchaseFrequency, 
+                            daysSinceFirstPurchase: { 
+                              ...segmentCriteria?.daysSinceFirstPurchase, 
                               max: e.target.value ? Number(e.target.value) : undefined 
                             }
                           })}
@@ -456,33 +452,6 @@ export function SegmentForm({
                       </div>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Müşteri Yaşı (Gün)</Label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Input
-                          type="number"
-                          placeholder="Min"
-                          value={segmentCriteria?.customerAge?.min || ''}
-                          onChange={(e) => updateCriteria({ 
-                            customerAge: { 
-                              ...segmentCriteria?.customerAge, 
-                              min: e.target.value ? Number(e.target.value) : undefined 
-                            }
-                          })}
-                        />
-                        <Input
-                          type="number"
-                          placeholder="Max"
-                          value={segmentCriteria?.customerAge?.max || ''}
-                          onChange={(e) => updateCriteria({ 
-                            customerAge: { 
-                              ...segmentCriteria?.customerAge, 
-                              max: e.target.value ? Number(e.target.value) : undefined 
-                            }
-                          })}
-                        />
-                      </div>
-                    </div>
                   </div>
                 </div>
               </CardContent>

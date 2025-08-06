@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import webpush from 'web-push'
+import * as webpush from 'web-push'
 
 // Configure web-push
 webpush.setVapidDetails(

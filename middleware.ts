@@ -15,7 +15,7 @@ function hasBearerToken(req: any): boolean {
   const token = authHeader.substring(7)
   const expectedToken = process.env.API_BEARER_TOKEN
   
-  return expectedToken && token === expectedToken
+  return Boolean(expectedToken && token === expectedToken)
 }
 
 // Simple middleware for mobile routes

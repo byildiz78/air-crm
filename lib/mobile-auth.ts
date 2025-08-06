@@ -182,7 +182,7 @@ export async function verifyOTP(phone: string, otp: string): Promise<{
       expiresAt
     }
 
-    const token = await new SignJWT(payload)
+    const token = await new SignJWT(payload as unknown as Record<string, unknown>)
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt(now)
       .setExpirationTime(expiresAt)
@@ -265,7 +265,7 @@ export async function refreshMobileToken(token: string): Promise<{ success: bool
       expiresAt
     }
 
-    const newToken = await new SignJWT(newPayload)
+    const newToken = await new SignJWT(newPayload as unknown as Record<string, unknown>)
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt(now)
       .setExpirationTime(expiresAt)

@@ -381,7 +381,7 @@ export function EnhancedCustomersView({
                         <div className="text-xs text-gray-600">işlem</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-xs text-gray-600">{formatDate(customer.createdAt)}</div>
+                        <div className="text-xs text-gray-600">{formatDate(customer.createdAt instanceof Date ? customer.createdAt.toISOString() : customer.createdAt)}</div>
                         <div className="text-xs text-gray-500">kayıt</div>
                       </div>
                     </div>
@@ -476,7 +476,7 @@ export function EnhancedCustomersView({
                     
                     {/* Registration Date */}
                     <div className="text-center text-sm shrink-0 min-w-[80px]">
-                      <div className="text-gray-600">{formatDate(customer.createdAt)}</div>
+                      <div className="text-gray-600">{formatDate(customer.createdAt instanceof Date ? customer.createdAt.toISOString() : customer.createdAt)}</div>
                       <div className="text-xs text-gray-500">kayıt</div>
                     </div>
                     
@@ -535,7 +535,7 @@ export function EnhancedCustomersView({
                 
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let page;
+                    let page: number;
                     if (totalPages <= 5) {
                       page = i + 1;
                     } else if (currentPage <= 3) {

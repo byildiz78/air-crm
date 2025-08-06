@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
         name: true,
         address: true,
         phone: true,
-        email: true,
         createdAt: true
       },
       orderBy: { name: 'asc' }

@@ -60,7 +60,9 @@ export function CampaignFormStep4({
           <Label>Toplam Kullanım Limiti (opsiyonel)</Label>
           <Input
             type="number"
-            {...register('maxUsage', { valueAsNumber: true })}
+            {...register('maxUsage', { 
+              setValueAs: (value) => value === '' || value === null ? undefined : Number(value)
+            })}
             placeholder="1000"
             className="mt-1"
           />

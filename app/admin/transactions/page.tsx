@@ -344,7 +344,7 @@ export default function TransactionsPage() {
       sortable: true,
       render: (item) => (
         <div className="space-y-1">
-          <div className="text-sm">{formatDate(item.transactionDate)}</div>
+          <div className="text-sm">{formatDate(item.transactionDate instanceof Date ? item.transactionDate.toISOString() : item.transactionDate)}</div>
           {item.pointsEarned > 0 && (
             <div className="text-xs text-blue-600 flex items-center gap-1">
               <Users className="h-3 w-3" />

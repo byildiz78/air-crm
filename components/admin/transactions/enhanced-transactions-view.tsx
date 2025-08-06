@@ -387,7 +387,7 @@ export function EnhancedTransactionsView({
                           {statusLabels[transaction.status as keyof typeof statusLabels]}
                         </Badge>
                         <div className="text-xs text-gray-500">
-                          {formatDate(transaction.transactionDate)}
+                          {formatDate(transaction.transactionDate instanceof Date ? transaction.transactionDate.toISOString() : transaction.transactionDate)}
                         </div>
                       </div>
                       
@@ -500,7 +500,7 @@ export function EnhancedTransactionsView({
                 
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let page;
+                    let page: number;
                     if (totalPages <= 5) {
                       page = i + 1;
                     } else if (currentPage <= 3) {
@@ -644,9 +644,12 @@ export function EnhancedTransactionsView({
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center gap-2">
-                      {React.cloneElement(getPaymentIcon(selectedTransaction.paymentMethod), { className: 'h-5 w-5 text-gray-600' })}
+                      {selectedTransaction.paymentMethod && React.cloneElement(getPaymentIcon(selectedTransaction.paymentMethod), { className: 'h-5 w-5 text-gray-600' })}
                       <span className="font-medium">
-                        {paymentLabels[selectedTransaction.paymentMethod as keyof typeof paymentLabels]}
+                        {selectedTransaction.paymentMethod 
+                          ? paymentLabels[selectedTransaction.paymentMethod as keyof typeof paymentLabels]
+                          : 'Belirtilmemiş'
+                        }
                       </span>
                     </div>
                   </CardContent>
@@ -673,7 +676,7 @@ export function EnhancedTransactionsView({
                 <CardContent>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-gray-500" />
-                    <span>{formatDate(selectedTransaction.transactionDate)}</span>
+                    <span>{formatDate(selectedTransaction.transactionDate instanceof Date ? selectedTransaction.transactionDate.toISOString() : selectedTransaction.transactionDate)}</span>
                   </div>
                 </CardContent>
               </Card>

@@ -27,7 +27,7 @@ export async function GET(
     }
 
     // Check if user has access to this product
-    if (session.user.role !== 'ADMIN' && product.restaurantId !== session.user.restaurantId) {
+    if (session.user.role !== 'ADMIN' && product.restaurantId !== (session.user as any).restaurantId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -66,7 +66,7 @@ export async function PUT(
     }
 
     // Check if user has access to this product
-    if (session.user.role !== 'ADMIN' && existingProduct.restaurantId !== session.user.restaurantId) {
+    if (session.user.role !== 'ADMIN' && existingProduct.restaurantId !== (session.user as any).restaurantId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -137,7 +137,7 @@ export async function DELETE(
     }
 
     // Check if user has access to this product
-    if (session.user.role !== 'ADMIN' && existingProduct.restaurantId !== session.user.restaurantId) {
+    if (session.user.role !== 'ADMIN' && existingProduct.restaurantId !== (session.user as any).restaurantId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

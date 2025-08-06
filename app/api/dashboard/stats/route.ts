@@ -35,8 +35,16 @@ export async function GET(request: NextRequest) {
       todayRevenue,
       thisMonthRevenue,
       lastMonthRevenue,
-      topProducts,
-      revenueByDay
+      revenueByDay,
+      // Additional transaction stats
+      completedTransactions,
+      pendingTransactions,
+      todayTransactions,
+      totalTransactionRevenue,
+      // Point transaction stats
+      totalPointsEarned,
+      totalPointsSpent,
+      totalPointsExpired
     ] = await Promise.all([
       // Total customers
       prisma.customer.count(),
@@ -168,29 +176,6 @@ export async function GET(request: NextRequest) {
         }
       }),
 
-      // Top selling products this month
-      prisma.transactionItem.groupBy({
-        by: ['productName'],
-        where: {
-          transaction: {
-            transactionDate: {
-              gte: startOfMonth
-            },
-            status: 'COMPLETED'
-          }
-        },
-        _sum: {
-          quantity: true,
-          totalPrice: true
-        },
-        orderBy: {
-          _sum: {
-            quantity: 'desc'
-          }
-        },
-        take: 5
-      }),
-
       // Revenue by day (last 7 days)
       prisma.transaction.groupBy({
         by: ['transactionDate'],
@@ -209,6 +194,75 @@ export async function GET(request: NextRequest) {
         orderBy: {
           transactionDate: 'asc'
         }
+      }),
+
+      // Points by month (last 6 months) - we'll calculate this separately after the main query
+      null, // placeholder for pointsByMonth
+
+      // Additional transaction stats
+      // Completed transactions
+      prisma.transaction.count({
+        where: {
+          status: 'COMPLETED'
+        }
+      }),
+
+      // Pending transactions
+      prisma.transaction.count({
+        where: {
+          status: 'PENDING'
+        }
+      }),
+
+      // Today's transaction count
+      prisma.transaction.count({
+        where: {
+          transactionDate: {
+            gte: startOfToday,
+            lt: endOfToday
+          }
+        }
+      }),
+
+      // Total transaction revenue (for average calculation)
+      prisma.transaction.aggregate({
+        where: {
+          status: 'COMPLETED'
+        },
+        _sum: {
+          finalAmount: true
+        }
+      }),
+
+      // Point transaction stats
+      // Total points earned
+      prisma.pointHistory.aggregate({
+        where: {
+          type: 'EARNED'
+        },
+        _sum: {
+          amount: true
+        }
+      }),
+
+      // Total points spent
+      prisma.pointHistory.aggregate({
+        where: {
+          type: 'SPENT'
+        },
+        _sum: {
+          amount: true
+        }
+      }),
+
+      // Total points expired
+      prisma.pointHistory.aggregate({
+        where: {
+          type: 'EXPIRED'
+        },
+        _sum: {
+          amount: true
+        }
       })
     ])
 
@@ -225,6 +279,64 @@ export async function GET(request: NextRequest) {
       ? Math.round((((thisMonthRevenue._sum.finalAmount || 0) - (lastMonthRevenue._sum.finalAmount || 0)) / (lastMonthRevenue._sum.finalAmount || 0)) * 100)
       : (thisMonthRevenue._sum.finalAmount || 0) > 0 ? 100 : 0
 
+    // Calculate average order value
+    const averageOrderValue = completedTransactions > 0 
+      ? (totalTransactionRevenue._sum.finalAmount || 0) / completedTransactions
+      : 0
+
+    // Calculate net point balance
+    const netPointBalance = (totalPointsEarned._sum.amount || 0) + 
+                           (totalPointsSpent._sum.amount || 0) + 
+                           (totalPointsExpired._sum.amount || 0)
+
+    // Calculate points by month for the last 6 months
+    const pointsByMonth = await Promise.all(
+      Array.from({ length: 6 }, async (_, i) => {
+        const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1)
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0)
+        
+        const [earnedData, spentData] = await Promise.all([
+          prisma.pointHistory.aggregate({
+            where: {
+              type: 'EARNED',
+              createdAt: {
+                gte: monthStart,
+                lte: monthEnd
+              }
+            },
+            _sum: { amount: true }
+          }),
+          prisma.pointHistory.aggregate({
+            where: {
+              type: 'SPENT',
+              createdAt: {
+                gte: monthStart,
+                lte: monthEnd
+              }
+            },
+            _sum: { amount: true }
+          })
+        ])
+        
+        const earned = earnedData._sum.amount || 0
+        const spent = Math.abs(spentData._sum.amount || 0)
+        
+        return {
+          month: monthStart.toLocaleDateString('tr-TR', { 
+            year: 'numeric', 
+            month: 'short' 
+          }),
+          earned,
+          spent,
+          earnedTL: earned * 0.1,
+          spentTL: spent * 0.1
+        }
+      })
+    )
+    
+    // Reverse to show oldest to newest
+    pointsByMonth.reverse()
+
     return NextResponse.json({
       stats: {
         totalCustomers,
@@ -240,7 +352,17 @@ export async function GET(request: NextRequest) {
         transactionGrowth,
         todayRevenue: todayRevenue._sum.finalAmount || 0,
         thisMonthRevenue: thisMonthRevenue._sum.finalAmount || 0,
-        revenueGrowth
+        revenueGrowth,
+        // Additional transaction stats
+        completedTransactions,
+        pendingTransactions,
+        averageOrderValue,
+        todayTransactions,
+        // Point transaction stats
+        totalPointsEarned: totalPointsEarned._sum.amount || 0,
+        totalPointsSpent: totalPointsSpent._sum.amount || 0,
+        totalPointsExpired: totalPointsExpired._sum.amount || 0,
+        netPointBalance
       },
       recentActivity: recentTransactions.map(transaction => ({
         id: transaction.id,
@@ -251,16 +373,12 @@ export async function GET(request: NextRequest) {
         color: 'bg-green-500'
       })),
       salesData: {
-        topProducts: topProducts.map(product => ({
-          name: product.productName,
-          quantity: product._sum.quantity || 0,
-          revenue: product._sum.totalPrice || 0
-        })),
         revenueByDay: revenueByDay.map(day => ({
           date: day.transactionDate,
           revenue: day._sum.finalAmount || 0,
           orderCount: day._count.id || 0
-        }))
+        })),
+        pointsByMonth
       }
     })
   } catch (error) {

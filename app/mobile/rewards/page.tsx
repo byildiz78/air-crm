@@ -20,6 +20,8 @@ interface Reward {
   isAvailable: boolean
   expiresAt?: string
   imageUrl?: string
+  source?: string
+  earnedAt?: string
 }
 
 function RewardsContent() {
@@ -29,6 +31,7 @@ function RewardsContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'affordable' | 'discount' | 'voucher' | 'free_product'>('all')
+  const [redeemingId, setRedeemingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (customer?.id) {
@@ -38,7 +41,7 @@ function RewardsContent() {
 
   const fetchRewards = async () => {
     try {
-      const response = await fetch(`/api/customers/${customer?.id}`, {
+      const response = await fetch(`/api/mobile/rewards?customerId=${customer?.id}`, {
         headers: {
           'Authorization': `Bearer ${process.env.NEXT_PUBLIC_API_BEARER_TOKEN}`
         }
@@ -46,97 +49,56 @@ function RewardsContent() {
 
       if (response.ok) {
         const data = await response.json()
-        // Transform campaigns into rewards format for now
-        // In production, this would be a separate rewards API
-        const rewardsData = (data.availableRewards || []).map((reward: any) => ({
-          id: reward.id,
-          name: reward.name,
-          description: reward.description,
-          type: reward.type || 'VOUCHER',
-          category: reward.category,
-          pointsCost: reward.pointsCost || Math.floor(Math.random() * 500) + 100,
-          value: reward.value || reward.discountValue,
-          isAvailable: reward.isActive !== false,
-          expiresAt: reward.endDate,
-          imageUrl: reward.imageUrl
-        }))
-        
-        // Add some demo rewards if none exist
-        if (rewardsData.length === 0) {
-          const demoRewards = [
-            {
-              id: 'demo-1',
-              name: '10₺ İndirim Kuponu',
-              description: 'Tüm ürünlerde geçerli 10 TL indirim kuponu',
-              type: 'DISCOUNT',
-              category: 'İndirim',
-              pointsCost: 200,
-              value: 10,
-              isAvailable: true
-            },
-            {
-              id: 'demo-2',
-              name: 'Bedava Kahve',
-              description: 'Seçili kahve çeşitlerinden birini bedava alın',
-              type: 'FREE_PRODUCT',
-              category: 'İçecek',
-              pointsCost: 150,
-              value: 15,
-              isAvailable: true
-            },
-            {
-              id: 'demo-3',
-              name: '%15 İndirim',
-              description: 'Tüm menüde %15 indirim fırsatı',
-              type: 'DISCOUNT',
-              category: 'İndirim',
-              pointsCost: 300,
-              value: 15,
-              isAvailable: customer?.points ? customer.points >= 300 : false
-            },
-            {
-              id: 'demo-4',
-              name: 'Bedava Tatlı',
-              description: 'Günün tatlısını bedava alın',
-              type: 'FREE_PRODUCT',
-              category: 'Tatlı',
-              pointsCost: 250,
-              value: 20,
-              isAvailable: customer?.points ? customer.points >= 250 : false
-            },
-            {
-              id: 'demo-5',
-              name: '50₺ Hediye Çeki',
-              description: 'Bir sonraki ziyaretinizde kullanabileceğiniz hediye çeki',
-              type: 'VOUCHER',
-              category: 'Hediye',
-              pointsCost: 500,
-              value: 50,
-              isAvailable: customer?.points ? customer.points >= 500 : false
-            }
-          ]
-          setRewards(demoRewards)
-        } else {
-          setRewards(rewardsData)
-        }
+        setRewards(data.rewards || [])
+      } else {
+        throw new Error(`API Error: ${response.status}`)
       }
     } catch (error) {
       console.error('Failed to fetch rewards:', error)
-      // Set demo rewards on error
-      setRewards([
-        {
-          id: 'demo-1',
-          name: '10₺ İndirim Kuponu',
-          description: 'Tüm ürünlerde geçerli 10 TL indirim kuponu',
-          type: 'DISCOUNT',
-          category: 'İndirim',
-          pointsCost: 200,
-          value: 10,
-          isAvailable: true
-        }
-      ])
+      // Set empty array on error - no more demo data
+      setRewards([])
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleRedeemReward = async (rewardId: string) => {
+    if (!customer?.id) return
+    
+    try {
+      setRedeemingId(rewardId)
+      
+      const response = await fetch('/api/mobile/rewards', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_API_BEARER_TOKEN}`
+        },
+        body: JSON.stringify({
+          customerId: customer.id,
+          rewardId
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        // Show success message
+        alert(`✅ ${data.message}\nKalan puanınız: ${data.remainingPoints}`)
+        
+        // Refresh rewards list
+        await fetchRewards()
+        
+        // Refresh customer data to update points
+        window.location.reload()
+      } else {
+        alert(`❌ Hata: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Error redeeming reward:', error)
+      alert('❌ Bir hata oluştu. Lütfen tekrar deneyin.')
+    } finally {
+      setRedeemingId(null)
     }
   }
 
@@ -432,6 +394,10 @@ function RewardsContent() {
               customerPoints={customer?.points || 0}
               expiresAt={reward.expiresAt}
               imageUrl={reward.imageUrl}
+              source={reward.source}
+              earnedAt={reward.earnedAt}
+              onRedeem={() => handleRedeemReward(reward.id)}
+              isRedeeming={redeemingId === reward.id}
             />
           ))}
         </div>

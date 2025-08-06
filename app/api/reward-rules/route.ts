@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check access rights
-    if (session.user.role !== 'ADMIN' && reward.restaurantId !== session.user.restaurantId) {
+    if (session.user.role !== 'ADMIN' && reward.restaurantId !== (session.user as any).restaurantId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

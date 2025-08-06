@@ -2,7 +2,23 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Users, Target, Megaphone, TrendingUp, Activity, Clock } from 'lucide-react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { 
+  Users, 
+  Target, 
+  Megaphone, 
+  TrendingUp, 
+  Activity, 
+  Clock, 
+  Receipt, 
+  DollarSign, 
+  CheckCircle, 
+  ShoppingBag, 
+  TrendingDown, 
+  Star, 
+  Plus, 
+  Minus 
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -22,6 +38,16 @@ interface DashboardStats {
   todayRevenue: number
   thisMonthRevenue: number
   revenueGrowth: number
+  // Transaction stats
+  completedTransactions: number
+  pendingTransactions: number
+  averageOrderValue: number
+  todayTransactions: number
+  // Point transaction stats
+  totalPointsEarned: number
+  totalPointsSpent: number
+  totalPointsExpired: number
+  netPointBalance: number
 }
 
 interface TopProduct {
@@ -36,9 +62,17 @@ interface RevenueByDay {
   orderCount: number
 }
 
+interface PointsByMonth {
+  month: string
+  earned: number
+  spent: number
+  earnedTL: number
+  spentTL: number
+}
+
 interface SalesData {
-  topProducts: TopProduct[]
   revenueByDay: RevenueByDay[]
+  pointsByMonth: PointsByMonth[]
 }
 
 interface RecentActivity {
@@ -79,6 +113,7 @@ export default function AdminDashboard() {
   }, [])
 
   const statsCards = stats ? [
+    // Row 1 - Financial Overview
     {
       title: 'Bugünün Cirosu',
       value: `${stats.todayRevenue.toLocaleString()} ₺`,
@@ -88,28 +123,61 @@ export default function AdminDashboard() {
       bgColor: 'bg-green-50'
     },
     {
+      title: 'Ortalama Sipariş',
+      value: `${stats.averageOrderValue?.toFixed(0) || 0}₺`,
+      description: 'İşlem başına',
+      icon: ShoppingBag,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50'
+    },
+    {
+      title: 'Toplam İşlem',
+      value: stats.totalTransactions.toLocaleString(),
+      description: `${stats.todayTransactions || 0} bugün`,
+      icon: Receipt,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50'
+    },
+    {
       title: 'Aylık Büyüme',
       value: `${stats.revenueGrowth >= 0 ? '+' : ''}${stats.revenueGrowth}%`,
       description: 'Ciro artışı (geçen aya göre)',
       icon: TrendingUp,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50'
+      color: 'text-emerald-600',
+      bgColor: 'bg-emerald-50'
     },
+    // Row 2 - Customer & Operations
     {
       title: 'Toplam Müşteri',
       value: stats.totalCustomers.toLocaleString(),
       description: `Bu ay ${stats.customerGrowth >= 0 ? '+' : ''}${stats.customerGrowth}% artış`,
       icon: Users,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50'
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-50'
     },
     {
-      title: 'Bu Ay İşlem',
-      value: stats.transactionsThisMonth.toString(),
-      description: `${stats.transactionGrowth >= 0 ? '+' : ''}${stats.transactionGrowth}% değişim`,
-      icon: Activity,
+      title: 'Tamamlanan İşlem',
+      value: (stats.completedTransactions || 0).toString(),
+      description: `${stats.pendingTransactions || 0} beklemede`,
+      icon: CheckCircle,
       color: 'text-amber-600',
       bgColor: 'bg-amber-50'
+    },
+    {
+      title: 'Toplam Puan Kazanılan',
+      value: (stats.totalPointsEarned || 0).toLocaleString(),
+      description: `${((stats.totalPointsEarned || 0) * 0.1).toLocaleString()} ₺ değerinde`,
+      icon: Star,
+      color: 'text-yellow-600',
+      bgColor: 'bg-yellow-50'
+    },
+    {
+      title: 'Net Puan Bakiyesi',
+      value: (stats.netPointBalance || 0).toLocaleString(),
+      description: `${((stats.netPointBalance || 0) * 0.1).toLocaleString()} ₺ değerinde`,
+      icon: TrendingUp,
+      color: 'text-cyan-600',
+      bgColor: 'bg-cyan-50'
     }
   ] : []
 
@@ -137,24 +205,63 @@ export default function AdminDashboard() {
         </div>
       ) : (
         <>
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {statsCards.map((stat) => (
-              <Card key={stat.title} className="hover:shadow-md transition-shadow">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600">
-                    {stat.title}
-                  </CardTitle>
-                  <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                    <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-                  <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
-                </CardContent>
-              </Card>
-            ))}
+          {/* Stats Cards - 2 rows of 4 cards each */}
+          <div className="space-y-6">
+            {/* Financial Overview Row */}
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Finansal Genel Bakış</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {statsCards.slice(0, 4).map((stat, index) => (
+                  <Card key={stat.title} className={`hover:shadow-lg transition-all duration-200 border-l-4 ${
+                    index === 0 ? 'border-l-green-500' :
+                    index === 1 ? 'border-l-purple-500' :
+                    index === 2 ? 'border-l-blue-500' :
+                    'border-l-emerald-500'
+                  }`}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-600">
+                        {stat.title}
+                      </CardTitle>
+                      <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+                        <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
+                      <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Operations & Customer Overview Row */}
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Operasyon & Müşteri Genel Bakış</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {statsCards.slice(4, 8).map((stat, index) => (
+                  <Card key={stat.title} className={`hover:shadow-lg transition-all duration-200 border-l-4 ${
+                    index === 0 ? 'border-l-indigo-500' :
+                    index === 1 ? 'border-l-amber-500' :
+                    index === 2 ? 'border-l-yellow-500' :
+                    'border-l-cyan-500'
+                  }`}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium text-gray-600">
+                        {stat.title}
+                      </CardTitle>
+                      <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+                        <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
+                      <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -193,48 +300,86 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            {/* Top Selling Products */}
+            {/* Monthly Point Movements Chart */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  En Çok Satan Ürünler
+                  <Star className="h-5 w-5" />
+                  Aylık Puan Hareketleri
                 </CardTitle>
                 <CardDescription>
-                  Bu ayki en popüler ürünler
+                  Son 6 ayda puan kazanım ve kullanım trendi
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {salesData?.topProducts && salesData.topProducts.length > 0 ? (
-                    salesData.topProducts.map((product, index) => (
-                      <div key={product.name} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                            index === 0 ? 'bg-yellow-500' : 
-                            index === 1 ? 'bg-gray-400' : 
-                            index === 2 ? 'bg-amber-600' : 'bg-blue-500'
-                          }`}>
-                            {index + 1}
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">{product.name}</p>
-                            <p className="text-xs text-gray-500">{product.quantity} adet satıldı</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium text-sm">{product.revenue.toLocaleString()} ₺</p>
-                          <p className="text-xs text-gray-500">toplam ciro</p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-4">
-                      <TrendingUp className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-sm text-gray-500">Henüz satış verisi bulunmuyor</p>
-                    </div>
-                  )}
-                </div>
+                {salesData?.pointsByMonth && salesData.pointsByMonth.length > 0 ? (
+                  <div className="h-80 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={salesData.pointsByMonth}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip 
+                          formatter={(value: number, name: string) => [
+                            value.toLocaleString(),
+                            name === 'earned' ? 'Kazanılan' : 
+                            name === 'spent' ? 'Harcanan' :
+                            name === 'earnedTL' ? 'Kazanılan (₺)' :
+                            name === 'spentTL' ? 'Harcanan (₺)' : name
+                          ]}
+                          labelFormatter={(label) => `${label}`}
+                        />
+                        <Legend 
+                          formatter={(value) => 
+                            value === 'earned' ? 'Kazanılan Puan' : 
+                            value === 'spent' ? 'Harcanan Puan' :
+                            value === 'earnedTL' ? 'Kazanılan (₺)' :
+                            value === 'spentTL' ? 'Harcanan (₺)' : value
+                          }
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="earned" 
+                          stroke="#10b981" 
+                          strokeWidth={2}
+                          dot={{ fill: '#10b981' }}
+                          name="earned"
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="spent" 
+                          stroke="#ef4444" 
+                          strokeWidth={2}
+                          dot={{ fill: '#ef4444' }}
+                          name="spent"
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="earnedTL" 
+                          stroke="#34d399" 
+                          strokeWidth={1}
+                          strokeDasharray="5 5"
+                          dot={{ fill: '#34d399' }}
+                          name="earnedTL"
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="spentTL" 
+                          stroke="#f87171" 
+                          strokeWidth={1}
+                          strokeDasharray="5 5"
+                          dot={{ fill: '#f87171' }}
+                          name="spentTL"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Star className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500">Henüz puan hareketi verisi bulunmuyor</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

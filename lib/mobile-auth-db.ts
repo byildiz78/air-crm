@@ -190,7 +190,7 @@ export async function verifyOTPDB(phone: string, otp: string): Promise<{
       expiresAt: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 days
     }
 
-    const token = await new SignJWT(session)
+    const token = await new SignJWT(session as unknown as Record<string, unknown>)
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime('30d')
@@ -222,7 +222,7 @@ export async function verifyMobileToken(token: string): Promise<{
     const { payload } = await jwtVerify(token, JWT_SECRET)
     return {
       success: true,
-      session: payload as MobileAuthSession
+      session: payload as unknown as MobileAuthSession
     }
   } catch (error) {
     return {

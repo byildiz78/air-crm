@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
     // Filter by restaurant if user is not admin
     if (session.user.role !== 'ADMIN') {
-      where.restaurantId = session.user.restaurantId
+      where.restaurantId = (session.user as any).restaurantId
     }
 
     if (search) {
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Determine restaurant ID
-    let restaurantId = session.user.restaurantId
+    let restaurantId = (session.user as any).restaurantId
     
     // If admin, they need to specify restaurant or have a default one
     if (session.user.role === 'ADMIN' && !restaurantId) {

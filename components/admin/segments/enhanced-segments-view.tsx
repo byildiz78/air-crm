@@ -320,7 +320,7 @@ export function EnhancedSegmentsView({
                     {/* Date */}
                     <div className="flex items-center gap-2 text-xs text-gray-500 border-t pt-3">
                       <Calendar className="h-3 w-3" />
-                      <span>{formatDate(segment.createdAt)} tarihinde oluşturuldu</span>
+                      <span>{formatDate(segment.createdAt instanceof Date ? segment.createdAt.toISOString() : segment.createdAt)} tarihinde oluşturuldu</span>
                     </div>
                     
                     {/* Action Buttons */}
@@ -414,7 +414,7 @@ export function EnhancedSegmentsView({
                     
                     {/* Date */}
                     <div className="text-center text-sm shrink-0 min-w-[80px]">
-                      <div className="text-gray-600 font-medium">{formatDate(segment.createdAt)}</div>
+                      <div className="text-gray-600 font-medium">{formatDate(segment.createdAt instanceof Date ? segment.createdAt.toISOString() : segment.createdAt)}</div>
                       <div className="text-xs text-gray-500">oluşturuldu</div>
                     </div>
                     

@@ -3,6 +3,7 @@
 import { ArrowLeft, Menu, Bell } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { useNotifications } from '@/hooks/useNotifications'
 
 interface MobileHeaderProps {
   title: string
@@ -22,6 +23,7 @@ export function MobileHeader({
   rightAction
 }: MobileHeaderProps) {
   const router = useRouter()
+  const { count } = useNotifications()
 
   return (
     <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
@@ -64,10 +66,15 @@ export function MobileHeader({
             variant="ghost"
             size="sm"
             className="p-2 relative"
+            onClick={() => router.push('/mobile/notifications')}
           >
             <Bell className="h-5 w-5 text-gray-600" />
-            {/* Notification dot */}
-            <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
+            {/* Unread notification count */}
+            {count.unread > 0 && (
+              <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 flex items-center justify-center px-1">
+                {count.unread > 99 ? '99+' : count.unread}
+              </div>
+            )}
           </Button>
         )}
         

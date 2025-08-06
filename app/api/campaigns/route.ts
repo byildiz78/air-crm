@@ -20,17 +20,17 @@ const campaignSchema = z.object({
   validDays: z.string().optional(),
   
   // Product/Category settings
-  targetProducts: z.string().optional(),
-  targetCategories: z.string().optional(),
-  freeProducts: z.string().optional(),
-  freeCategories: z.string().optional(),
+  targetProducts: z.string().nullable().optional(),
+  targetCategories: z.string().nullable().optional(),
+  freeProducts: z.string().nullable().optional(),
+  freeCategories: z.string().nullable().optional(),
   
   // Buy-X-Get-Y settings
   buyQuantity: z.number().optional(),
   getQuantity: z.number().optional(),
   buyFromCategory: z.string().optional(),
   getFromCategory: z.string().optional(),
-  getSpecificProduct: z.string().optional(),
+  getSpecificProduct: z.string().nullable().optional(),
   
   // Reward integration
   rewardIds: z.string().optional(),
@@ -39,8 +39,8 @@ const campaignSchema = z.object({
   pointsMultiplier: z.number().default(1),
   pointsRequired: z.number().optional(),
   sendNotification: z.boolean().default(true),
-  notificationTitle: z.string().optional(),
-  notificationMessage: z.string().optional(),
+  notificationTitle: z.string().optional().nullable(),
+  notificationMessage: z.string().optional().nullable(),
   segmentIds: z.array(z.string()).optional(),
   restaurantId: z.string()
 })
@@ -91,7 +91,10 @@ export async function GET(request: NextRequest) {
             select: { id: true, name: true }
           },
           _count: {
-            select: { usages: true }
+            select: { 
+              usages: true,
+              transactions: true 
+            }
           }
         },
         orderBy: { createdAt: 'desc' }
@@ -125,7 +128,38 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    console.log('=== CAMPAIGN API RECEIVED DATA ===')
+    console.log(JSON.stringify(body, null, 2))
+    
+    try {
+      const { segmentIds, ...campaignData } = campaignSchema.parse(body)
+      console.log('=== VALIDATION SUCCESSFUL ===')
+    } catch (validationError) {
+      console.log('=== VALIDATION ERROR ===')
+      console.error(validationError)
+      return NextResponse.json({ 
+        error: 'Validation failed', 
+        details: validationError 
+      }, { status: 400 })
+    }
+    
     const { segmentIds, ...campaignData } = campaignSchema.parse(body)
+
+    // Verify that the restaurant exists
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { id: campaignData.restaurantId }
+    })
+
+    if (!restaurant) {
+      console.error('Restaurant not found:', campaignData.restaurantId)
+      return NextResponse.json({ 
+        error: 'Restaurant not found',
+        restaurantId: campaignData.restaurantId 
+      }, { status: 400 })
+    }
+
+    console.log('=== CREATING CAMPAIGN ===')
+    console.log('Restaurant found:', restaurant.name)
 
     const campaign = await prisma.campaign.create({
       data: {
@@ -155,6 +189,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.errors }, { status: 400 })
     }
     console.error('Error creating campaign:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      details: error
+    }, { status: 500 })
   }
 }

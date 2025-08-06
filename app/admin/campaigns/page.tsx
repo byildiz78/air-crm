@@ -2,25 +2,19 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { CampaignTable } from '@/components/admin/campaigns/campaign-table'
+import { CampaignTabs } from '@/components/admin/campaigns/CampaignTabs'
 import { SimpleCampaignModal } from '@/components/admin/campaigns/SimpleCampaignModal'
-import { Plus, Megaphone, TrendingUp, Users, BarChart3, Search, Filter } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Campaign } from '@prisma/client'
 import { toast } from 'sonner'
 
 interface CampaignWithDetails extends Campaign {
   restaurant: { name: string }
   segments: { name: string }[]
-  _count: { usages: number }
+  _count: { 
+    usages?: number
+    transactions?: number 
+  }
 }
 
 interface CampaignStats {
@@ -31,6 +25,8 @@ interface CampaignStats {
 }
 
 export default function CampaignsPage() {
+  console.log('=== CampaignsPage COMPONENT MOUNTED ===')
+  
   const [campaigns, setCampaigns] = useState<CampaignWithDetails[]>([])
   const [stats, setStats] = useState<CampaignStats>({
     total: 0,
@@ -42,6 +38,11 @@ export default function CampaignsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
   const [formLoading, setFormLoading] = useState(false)
+  
+  // Log formOpen changes
+  useEffect(() => {
+    console.log('=== formOpen STATE CHANGED ===', formOpen)
+  }, [formOpen])
   
   // Filters
   const [searchValue, setSearchValue] = useState('')
@@ -75,7 +76,7 @@ export default function CampaignsPage() {
       )
       
       const totalUsages = data.campaigns.reduce(
-        (sum: number, c: CampaignWithDetails) => sum + c._count.usages, 0
+        (sum: number, c: CampaignWithDetails) => sum + (c._count.usages || 0) + (c._count.transactions || 0), 0
       )
       
       setStats({
@@ -97,15 +98,33 @@ export default function CampaignsPage() {
   }, [currentPage, searchValue, typeFilter, statusFilter])
 
   const handleCreateCampaign = async (data: any) => {
+    console.log('=== handleCreateCampaign ÇAĞRILDI ===')
+    console.log('Gelen data:', JSON.stringify(data, null, 2))
+    
     try {
       setFormLoading(true)
+      
+      console.log('=== API ÇAĞRISI YAPILIYOR ===')
+      console.log('URL: /api/campaigns')
+      console.log('Method: POST')
+      console.log('Body:', JSON.stringify(data, null, 2))
+      
       const response = await fetch('/api/campaigns', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       })
+      
+      console.log('=== API RESPONSE ===')
+      console.log('Status:', response.status)
+      console.log('OK:', response.ok)
 
-      if (!response.ok) throw new Error('Failed to create campaign')
+      if (!response.ok) {
+        const errorData = await response.text()
+        console.log('=== API ERROR RESPONSE ===')
+        console.log('Error data:', errorData)
+        throw new Error(`Failed to create campaign: ${errorData}`)
+      }
       
       toast.success('Kampanya başarıyla oluşturuldu')
       setFormOpen(false)
@@ -119,11 +138,18 @@ export default function CampaignsPage() {
   }
 
   const handleUpdateCampaign = async (data: any) => {
-    if (!editingCampaign) return
+    console.log('=== handleUpdateCampaign ÇAĞRILDI ===')
+    console.log('editingCampaign:', editingCampaign)
+    console.log('Gelen data:', data)
+    
+    if (!editingCampaign) {
+      console.error('editingCampaign boş, güncelleme yapılamaz!')
+      return
+    }
 
     try {
       setFormLoading(true)
-      console.log('Updating campaign with data:', data)
+      console.log('API çağrısı yapılıyor...')
       
       const response = await fetch(`/api/campaigns/${editingCampaign.id}`, {
         method: 'PUT',
@@ -201,40 +227,6 @@ export default function CampaignsPage() {
     fetchCampaigns()
   }
 
-  const statsCards = [
-    {
-      title: 'Toplam Kampanya',
-      value: stats.total.toString(),
-      description: `${stats.active} aktif kampanya`,
-      icon: Megaphone,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50'
-    },
-    {
-      title: 'Aktif Kampanya',
-      value: stats.active.toString(),
-      description: 'Şu anda çalışan',
-      icon: TrendingUp,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50'
-    },
-    {
-      title: 'Toplam Kullanım',
-      value: stats.totalUsages.toString(),
-      description: 'Tüm kampanyalar',
-      icon: BarChart3,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50'
-    },
-    {
-      title: 'Ortalama Kullanım',
-      value: stats.averageUsage.toString(),
-      description: 'Kampanya başına',
-      icon: Users,
-      color: 'text-amber-600',
-      bgColor: 'bg-amber-50'
-    }
-  ]
 
   return (
     <div className="space-y-6">
@@ -244,112 +236,42 @@ export default function CampaignsPage() {
           <p className="text-gray-600">Müşterilerinize özel kampanyalar oluşturun ve yönetin</p>
         </div>
         <Button onClick={() => {
+          console.log('=== YENİ KAMPANYA BUTTON CLICKED ===')
           setEditingCampaign(null) // Önce null yap
           setFormOpen(true)
+          console.log('formOpen set to true')
         }}>
           <Plus className="mr-2 h-4 w-4" />
           Yeni Kampanya
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {statsCards.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                {stat.title}
-              </CardTitle>
-              <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-              <p className="text-xs text-gray-500 mt-1">{stat.description}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <form onSubmit={handleSearch} className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Kampanya adı veya açıklama ile ara..."
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-[180px]">
-                <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Tür filtrele" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Tüm Türler</SelectItem>
-                <SelectItem value="DISCOUNT">İndirim</SelectItem>
-                <SelectItem value="PRODUCT_BASED">Ürün Bazlı</SelectItem>
-                <SelectItem value="CATEGORY_DISCOUNT">Kategori İndirimi</SelectItem>
-                <SelectItem value="BUY_X_GET_Y">X Al Y Bedava</SelectItem>
-                <SelectItem value="COMBO_DEAL">Kombo Fırsat</SelectItem>
-                <SelectItem value="REWARD_CAMPAIGN">Ödül Kampanyası</SelectItem>
-                <SelectItem value="LOYALTY_POINTS">Sadakat Puanı</SelectItem>
-                <SelectItem value="TIME_BASED">Zaman Bazlı</SelectItem>
-                <SelectItem value="BIRTHDAY_SPECIAL">Doğum Günü</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Durum" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Tümü</SelectItem>
-                <SelectItem value="active">Aktif</SelectItem>
-                <SelectItem value="inactive">Pasif</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button type="submit">Ara</Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Campaign Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Kampanya Listesi</CardTitle>
-          <CardDescription>
-            Tüm kampanyalarınızı görüntüleyin ve yönetin
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
-            </div>
-          ) : (
-            <CampaignTable
-              campaigns={campaigns}
-              onEdit={handleEdit}
-              onDelete={handleDeleteCampaign}
-              onView={handleView}
-              onToggleStatus={handleToggleStatus}
-            />
-          )}
-        </CardContent>
-      </Card>
+      {/* Campaign Tabs */}
+      <CampaignTabs
+        campaigns={campaigns}
+        stats={stats}
+        loading={loading}
+        onEdit={handleEdit}
+        onDelete={handleDeleteCampaign}
+        onView={handleView}
+        onToggleStatus={handleToggleStatus}
+        onRefresh={fetchCampaigns}
+        searchValue={searchValue}
+        setSearchValue={setSearchValue}
+        typeFilter={typeFilter}
+        setTypeFilter={setTypeFilter}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        handleSearch={handleSearch}
+      />
 
       {/* Campaign Form Modal */}
       <SimpleCampaignModal
         open={formOpen}
         onOpenChange={(open) => {
+          console.log('=== onOpenChange CALLED ===', open)
           setFormOpen(open)
           if (!open) setEditingCampaign(null)
         }}

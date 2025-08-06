@@ -26,6 +26,20 @@ interface Customer {
   restaurant?: {
     name: string
   }
+  rewards?: {
+    id: string
+    isRedeemed: boolean
+    redeemedAt?: string
+    expiresAt?: string
+  }[]
+  campaignUsages?: {
+    id: string
+    campaignId: string
+    usedAt: string
+    orderAmount: number
+    discountAmount: number
+  }[]
+  createdAt?: string
 }
 
 interface AuthContextType {
@@ -34,6 +48,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   logout: () => void
   refreshAuth: () => Promise<void>
+  refreshCustomer: () => Promise<void>
   updateCustomer: (updatedCustomer: Customer) => void
 }
 
@@ -100,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: !!customer,
     logout,
     refreshAuth,
+    refreshCustomer: refreshAuth,
     updateCustomer
   }
 

@@ -22,7 +22,7 @@ export class TierService {
       }
 
       // Get all active tiers for this restaurant, ordered by level
-      const tiers = await prisma.Tier.findMany({
+      const tiers = await prisma.tier.findMany({
         where: {
           restaurantId: customer.restaurantId,
           isActive: true
@@ -100,7 +100,7 @@ export class TierService {
       throw new Error('Customer not found')
     }
 
-    const newTier = await prisma.Tier.findUnique({
+    const newTier = await prisma.tier.findUnique({
       where: { id: newTierId }
     })
 
@@ -161,7 +161,7 @@ export class TierService {
     }
 
     // Calculate progress to next tier
-    const nextTier = await prisma.Tier.findFirst({
+    const nextTier = await prisma.tier.findFirst({
       where: {
         restaurantId: customer.restaurantId,
         level: { gt: customer.tier?.level || -1 },
@@ -240,7 +240,7 @@ export class TierService {
    * Get all tiers for a restaurant with customer counts
    */
   async getRestaurantTiers(restaurantId: string) {
-    const tiers = await prisma.Tier.findMany({
+    const tiers = await prisma.tier.findMany({
       where: { restaurantId },
       include: {
         _count: {
@@ -269,7 +269,7 @@ export class TierService {
       }
     })
 
-    const tiers = await prisma.Tier.findMany({
+    const tiers = await prisma.tier.findMany({
       where: { restaurantId },
       orderBy: { level: 'asc' }
     })
@@ -285,7 +285,7 @@ export class TierService {
 
     for (const customer of customers) {
       const targetLevel = levelMapping[customer.level as keyof typeof levelMapping] ?? 0
-      const targetTier = tiers.find(t => t.level === targetLevel)
+      const targetTier = tiers.find((t: any) => t.level === targetLevel)
       
       if (targetTier) {
         await prisma.customer.update({

@@ -27,7 +27,7 @@ export async function GET(
     }
 
     // Check access rights
-    if (session.user.role !== 'ADMIN' && rule.reward.restaurantId !== session.user.restaurantId) {
+    if (session.user.role !== 'ADMIN' && rule.reward.restaurantId !== (session.user as any).restaurantId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -69,7 +69,7 @@ export async function PUT(
     }
 
     // Check access rights
-    if (session.user.role !== 'ADMIN' && existingRule.reward.restaurantId !== session.user.restaurantId) {
+    if (session.user.role !== 'ADMIN' && existingRule.reward.restaurantId !== (session.user as any).restaurantId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -127,7 +127,7 @@ export async function DELETE(
     }
 
     // Check access rights
-    if (session.user.role !== 'ADMIN' && existingRule.reward.restaurantId !== session.user.restaurantId) {
+    if (session.user.role !== 'ADMIN' && existingRule.reward.restaurantId !== (session.user as any).restaurantId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

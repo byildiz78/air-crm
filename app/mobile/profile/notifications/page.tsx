@@ -12,8 +12,7 @@ export default function NotificationSettingsPage() {
       <ThemeProvider>
         <MobileContainer 
           title="Bildirim Ayarları"
-          showBackButton
-          backHref="/mobile/profile"
+          showBack
         >
           <NotificationSettingsContent />
         </MobileContainer>

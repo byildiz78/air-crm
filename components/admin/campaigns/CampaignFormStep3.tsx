@@ -71,7 +71,9 @@ export function CampaignFormStep3({
             <Label>İndirim Yüzdesi (%)</Label>
             <Input
               type="number"
-              {...register('discountValue', { valueAsNumber: true })}
+              {...register('discountValue', { 
+                setValueAs: (value) => value === '' || value === null ? undefined : Number(value)
+              })}
               placeholder="20"
               className="mt-1"
             />
@@ -83,7 +85,9 @@ export function CampaignFormStep3({
             <Label>İndirim Tutarı (₺)</Label>
             <Input
               type="number"
-              {...register('discountValue', { valueAsNumber: true })}
+              {...register('discountValue', { 
+                setValueAs: (value) => value === '' || value === null ? undefined : Number(value)
+              })}
               placeholder="50"
               className="mt-1"
             />
@@ -131,7 +135,9 @@ export function CampaignFormStep3({
             <Input
               type="number"
               step="0.1"
-              {...register('pointsMultiplier', { valueAsNumber: true })}
+              {...register('pointsMultiplier', { 
+                setValueAs: (value) => value === '' || value === null ? undefined : Number(value)
+              })}
               placeholder="2.0"
               className="mt-1"
             />

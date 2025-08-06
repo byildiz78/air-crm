@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       where.isActive = true
     }
 
-    const tiers = await prisma.Tier.findMany({
+    const tiers = await prisma.tier.findMany({
       where,
       orderBy: { level: 'asc' },
       include: {
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     const restaurantId = 'default-restaurant-id' // TODO: Get from session
 
     // Check if tier name already exists
-    const existingTier = await prisma.Tier.findFirst({
+    const existingTier = await prisma.tier.findFirst({
       where: {
         name: validatedData.name,
         restaurantId
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if level already exists
-    const existingLevel = await prisma.Tier.findFirst({
+    const existingLevel = await prisma.tier.findFirst({
       where: {
         level: validatedData.level,
         restaurantId
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Tier with this level already exists' }, { status: 400 })
     }
 
-    const tier = await prisma.Tier.create({
+    const tier = await prisma.tier.create({
       data: {
         ...validatedData,
         restaurantId,

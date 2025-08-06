@@ -121,7 +121,10 @@ export async function GET(
       },
       include: {
         _count: {
-          select: { usages: true }
+          select: { 
+            usages: true,
+            transactions: true 
+          }
         },
         usages: {
           where: { customerId: customer.id }
@@ -129,8 +132,33 @@ export async function GET(
       }
     })
 
+    // Calculate total usage count for each campaign including stamp-based usages
+    const campaignsWithUsageCount = await Promise.all(
+      activeCampaigns.map(async (campaign) => {
+        let totalUsageCount = campaign._count.usages
+        
+        // For Buy X Get Y campaigns (PRODUCT_BASED with buyQuantity), also count TransactionCampaign entries
+        if (campaign.type === 'PRODUCT_BASED' && campaign.buyQuantity) {
+          const stampUsages = await prisma.transactionCampaign.count({
+            where: {
+              campaignId: campaign.id
+            }
+          })
+          totalUsageCount += stampUsages
+        }
+        
+        return {
+          ...campaign,
+          _count: {
+            ...campaign._count,
+            usages: totalUsageCount
+          }
+        }
+      })
+    )
+
     // Filter campaigns based on usage limits
-    const availableCampaigns = activeCampaigns.filter(campaign => {
+    const availableCampaigns = campaignsWithUsageCount.filter(campaign => {
       // Check max usage per customer
       if (campaign.maxUsagePerCustomer && campaign.usages.length >= campaign.maxUsagePerCustomer) {
         return false

@@ -116,7 +116,7 @@ export function CustomerForm({ open, onOpenChange, customer, onSubmit, isLoading
       name: customer?.name || '',
       email: customer?.email || '',
       phone: customer?.phone || '',
-      birthDate: customer?.birthDate ? new Date(customer.birthDate).toISOString().split('T')[0] : '',
+      birthDate: customer?.birthDate ? (customer.birthDate instanceof Date ? customer.birthDate.toISOString().split('T')[0] : customer.birthDate.split('T')[0]) : '',
       level: customer?.level || 'REGULAR'
     }
   })

@@ -175,6 +175,18 @@ export async function POST(request: NextRequest) {
     // Get tier-specific point multiplier (default: 1.0)
     const tierPointMultiplier = customer.tier?.pointMultiplier || 1.0
     
+    // Check if orderNumber already exists
+    const existingTransaction = await prisma.transaction.findUnique({
+      where: { orderNumber: validatedData.orderNumber }
+    })
+    
+    if (existingTransaction) {
+      return NextResponse.json({
+        error: 'Bu siparişe ait zaten kayıtlı işlem var',
+        orderNumber: validatedData.orderNumber
+      }, { status: 409 })
+    }
+
     // Calculate points earned: amount * baseRate * tierMultiplier
     // Example: 100 TL * 0.1 * 2.0 = 20 points (for a tier with 2x multiplier)
     const pointsEarned = Math.floor(validatedData.finalAmount * basePointRate * tierPointMultiplier)
@@ -196,7 +208,12 @@ export async function POST(request: NextRequest) {
           create: validatedData.items
         },
         appliedCampaigns: validatedData.appliedCampaigns ? {
-          create: validatedData.appliedCampaigns
+          create: validatedData.appliedCampaigns.map((campaign: any) => ({
+            discountAmount: campaign.discountAmount,
+            pointsEarned: campaign.pointsEarned,
+            freeItems: campaign.freeItems ? JSON.stringify(campaign.freeItems) : null,
+            campaign: { connect: { id: campaign.campaignId } }
+          }))
         } : undefined
       },
       include: {
@@ -299,11 +316,24 @@ export async function POST(request: NextRequest) {
     queueSegmentUpdate(validatedData.customerId)
 
     return NextResponse.json(transaction, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 })
     }
+    
+    // Handle Prisma unique constraint errors
+    if (error.code === 'P2002') {
+      console.error('Unique constraint violation:', error.meta)
+      return NextResponse.json({ 
+        error: 'Duplicate order number. Please try again.', 
+        details: error.meta 
+      }, { status: 409 })
+    }
+    
     console.error('Error creating transaction:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      ...(process.env.NODE_ENV === 'development' && { details: error.message })
+    }, { status: 500 })
   }
 }

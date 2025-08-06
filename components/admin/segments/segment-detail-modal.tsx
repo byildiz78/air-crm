@@ -28,8 +28,6 @@ import { tr } from 'date-fns/locale'
 interface SegmentWithDetails extends Segment {
   restaurant: { name: string }
   _count: { customers: number }
-  isAutomatic?: boolean
-  criteria?: string
 }
 
 interface CustomerWithDetails extends Customer {

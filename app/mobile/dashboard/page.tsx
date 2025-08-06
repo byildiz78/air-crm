@@ -9,12 +9,13 @@ import { QuickStatsCard } from '@/components/mobile/cards/QuickStatsCard'
 import { useAuth } from '@/lib/mobile/auth-context'
 import { AuthProvider } from '@/lib/mobile/auth-context'
 import { ThemeProvider, useTheme } from '@/lib/mobile/theme-context'
-import { ShoppingBag, TrendingUp, Calendar, Gift } from 'lucide-react'
+import { ShoppingBag, TrendingUp, Calendar, Gift, QrCode, X } from 'lucide-react'
 import { ThemedButton } from '@/components/mobile/ui/ThemedButton'
 import { LoadingSpinner, SkeletonCard } from '@/components/mobile/ui/LoadingSpinner'
 import { useMemoryOptimizer, usePerformanceMonitor } from '@/components/mobile/ui/PerformanceOptimizer'
 import { MobileBottomNav } from '@/components/mobile/layout/MobileBottomNav'
 import { NotificationPrompt } from '@/components/mobile/notifications/NotificationPrompt'
+import { QRCodeGenerator } from '@/components/mobile/ui/QRCodeGenerator'
 import { useRouter } from 'next/navigation'
 
 // Lazy load heavy components
@@ -34,12 +35,22 @@ const RecentTransactions = dynamic(() =>
   }
 )
 
+const StampCollection = dynamic(() => 
+  import('@/components/mobile/stamps/StampCollection').then(mod => ({ default: mod.StampCollection })), 
+  { 
+    loading: () => <SkeletonCard />,
+    ssr: false 
+  }
+)
+
 function DashboardContent() {
   const { customer, isLoading: authLoading } = useAuth()
   const { theme } = useTheme()
   const router = useRouter()
   const [dashboardData, setDashboardData] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showQRModal, setShowQRModal] = useState(false)
+  const [qrTimer, setQrTimer] = useState<NodeJS.Timeout | null>(null)
 
   // Performance optimizations
   useMemoryOptimizer()
@@ -70,6 +81,34 @@ function DashboardContent() {
       setIsLoading(false)
     }
   }
+
+  const handleShowQR = () => {
+    setShowQRModal(true)
+    
+    // Auto close after 30 seconds
+    const timer = setTimeout(() => {
+      setShowQRModal(false)
+    }, 30000)
+    
+    setQrTimer(timer)
+  }
+
+  const handleCloseQR = () => {
+    setShowQRModal(false)
+    if (qrTimer) {
+      clearTimeout(qrTimer)
+      setQrTimer(null)
+    }
+  }
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (qrTimer) {
+        clearTimeout(qrTimer)
+      }
+    }
+  }, [qrTimer])
 
   if (authLoading || isLoading) {
     return <LoadingSpinner size="lg" text="Yükleniyor..." fullScreen />
@@ -137,10 +176,32 @@ function DashboardContent() {
             tierName={customer?.tier?.name}
             tierDisplayName={customer?.tier?.displayName}
             tierColor={customer?.tier?.color}
-            pointsToNextTier={customer?.tier?.level < 4 ? 1000 : undefined}
-            nextTierName={customer?.tier?.level < 4 ? 'Gold' : undefined}
+            pointsToNextTier={customer?.tier ? 1000 : undefined}
+            nextTierName={customer?.tier ? 'Next Tier' : undefined}
           />
         </div>
+
+        {/* QR Code Button */}
+        <div className="flex justify-center">
+          <ThemedButton
+            variant="outline"
+            size="lg"
+            onClick={handleShowQR}
+            className="border-theme-primary text-theme-primary hover:bg-theme-primary hover:text-white flex items-center gap-2 px-8 py-3 rounded-xl shadow-lg"
+          >
+            <QrCode className="w-5 h-5" />
+            QR Oluştur
+          </ThemedButton>
+        </div>
+
+        {/* Stamp Collection - moved above stats */}
+        {customer?.id && (
+          <div className="space-y-4">
+            <Suspense fallback={<SkeletonCard />}>
+              <StampCollection customerId={customer.id} />
+            </Suspense>
+          </div>
+        )}
 
         {/* Quick Stats with section title */}
         <div className="space-y-4">
@@ -219,6 +280,47 @@ function DashboardContent() {
         {/* Bottom spacing for better UX */}
         <div className="h-8" />
       </div>
+
+      {/* QR Code Modal */}
+      {showQRModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm relative animate-in fade-in-0 zoom-in-95 duration-300">
+            {/* Close Button */}
+            <button
+              onClick={handleCloseQR}
+              className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+
+            {/* QR Code Generator */}
+            <QRCodeGenerator
+              data={JSON.stringify({ sessionId: customer?.id })}
+              title="Müşteri QR Kodu"
+              subtitle="Bu kodu kasada göstererek işlem yapabilirsiniz"
+              size={200}
+              showActions={false}
+              className="border-0 shadow-none bg-transparent"
+            />
+
+            {/* Auto close indicator */}
+            <div className="mt-4 text-center">
+              <div className="text-xs text-gray-500 mb-2">
+                Bu pencere 30 saniye içinde otomatik kapanacak
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-1">
+                <div 
+                  className="bg-theme-primary h-1 rounded-full animate-pulse"
+                  style={{ 
+                    animation: 'shrink 30s linear forwards',
+                    transformOrigin: 'left center'
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
@@ -228,6 +330,16 @@ export default function DashboardPage() {
     <AuthProvider>
       <ThemeProvider>
         <div className="min-h-screen bg-theme-background flex flex-col">
+          <style jsx>{`
+            @keyframes shrink {
+              from {
+                transform: scaleX(1);
+              }
+              to {
+                transform: scaleX(0);
+              }
+            }
+          `}</style>
           <main className="flex-1 pb-16">
             <DashboardContent />
           </main>

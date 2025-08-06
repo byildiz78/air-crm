@@ -133,7 +133,11 @@ export async function PUT(
       }, { status: 400 })
     }
     console.error('Error updating campaign:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      details: error
+    }, { status: 500 })
   }
 }
 

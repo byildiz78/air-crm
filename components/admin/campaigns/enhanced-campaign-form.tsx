@@ -269,9 +269,9 @@ export function EnhancedCampaignForm({
         }
       }
 
-      // Segments (assuming campaign has segments relation)
-      if (campaign.segments && Array.isArray(campaign.segments)) {
-        setSelectedSegments(campaign.segments.map((s: any) => s.id || s))
+      // Segments (check if campaign has segments relation)
+      if ((campaign as any).segments && Array.isArray((campaign as any).segments)) {
+        setSelectedSegments((campaign as any).segments.map((s: any) => s.id || s))
       }
 
       // Time restrictions
@@ -321,7 +321,7 @@ export function EnhancedCampaignForm({
         setProducts(data.products || [])
         
         // Extract unique categories
-        const uniqueCategories = [...new Set(data.products?.map((p: Product) => p.category) || [])]
+        const uniqueCategories = Array.from(new Set(data.products?.map((p: Product) => p.category).filter(Boolean) || [])) as string[]
         setCategories(uniqueCategories)
       }
     } catch (error) {

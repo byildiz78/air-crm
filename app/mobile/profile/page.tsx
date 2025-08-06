@@ -7,6 +7,7 @@ import { ThemedCard } from '@/components/mobile/ui/ThemedCard'
 import { ThemedButton } from '@/components/mobile/ui/ThemedButton'
 import { AuthProvider, useAuth } from '@/lib/mobile/auth-context'
 import { ThemeProvider, useTheme } from '@/lib/mobile/theme-context'
+import { useNotifications } from '@/hooks/useNotifications'
 import { 
   User, 
   Phone, 
@@ -23,7 +24,8 @@ import {
   ChevronRight,
   Shield,
   HelpCircle,
-  MessageSquare
+  MessageSquare,
+  History
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -32,6 +34,7 @@ import { toast } from 'sonner'
 function ProfileContent() {
   const { customer, logout } = useAuth()
   const { theme } = useTheme()
+  const { count: notificationCount } = useNotifications()
   const router = useRouter()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
 
@@ -116,7 +119,7 @@ function ProfileContent() {
           
           <div className="flex-1">
             <h1 className="text-xl font-bold text-theme-text-primary">
-              {customer?.firstName} {customer?.lastName}
+              {customer?.name}
             </h1>
             <div className="flex items-center gap-1 text-theme-text-secondary mt-1">
               <Phone className="w-4 h-4" />
@@ -177,8 +180,8 @@ function ProfileContent() {
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className="h-2 rounded-full transition-all duration-300"
-                  style={{ backgroundColor: theme.primary }}
-                  style={{
+                  style={{ 
+                    backgroundColor: theme.primary,
                     width: `${Math.min(100, (tierInfo.progress / tierInfo.target) * 100)}%`
                   }}
                 ></div>
@@ -208,7 +211,7 @@ function ProfileContent() {
         <ThemedCard className="text-center">
           <Gift className="w-8 h-8 mx-auto mb-2" style={{ color: theme.primary }} />
           <div className="text-2xl font-bold text-theme-text-primary mb-1">
-            {customer?.redeemedRewards || 0}
+            {customer?.rewards?.filter(reward => reward.isRedeemed).length || 0}
           </div>
           <div className="text-sm text-theme-text-secondary">
             Alınan Ödül
@@ -218,7 +221,7 @@ function ProfileContent() {
         <ThemedCard className="text-center">
           <TrendingUp className="w-8 h-8 mx-auto mb-2" style={{ color: theme.primary }} />
           <div className="text-2xl font-bold text-theme-text-primary mb-1">
-            {customer?.usedCampaigns || 0}
+            {customer?.campaignUsages?.length || 0}
           </div>
           <div className="text-sm text-theme-text-secondary">
             Kullanılan Kampanya
@@ -242,15 +245,38 @@ function ProfileContent() {
           </div>
         </ThemedCard>
 
-        {/* Notifications */}
+        {/* Notification Settings */}
         <ThemedCard interactive onClick={handleNotificationSettings}>
           <div className="flex items-center gap-4 p-1">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${theme.secondary}15` }}>
-              <Bell className="w-5 h-5" style={{ color: theme.secondary }} />
+              <Settings className="w-5 h-5" style={{ color: theme.secondary }} />
             </div>
             <div className="flex-1">
-              <h3 className="font-medium text-theme-text-primary">Bildirimler</h3>
-              <p className="text-sm text-theme-text-secondary">Bildirim tercihlerinizi ayarlayın</p>
+              <h3 className="font-medium text-theme-text-primary">Bildirim Ayarları</h3>
+              <p className="text-sm text-theme-text-secondary">Bildirim tercihlerinizi yönetin</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-theme-text-secondary" />
+          </div>
+        </ThemedCard>
+
+        {/* Notification History */}
+        <ThemedCard interactive onClick={() => router.push('/mobile/notifications')}>
+          <div className="flex items-center gap-4 p-1">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center relative" style={{ backgroundColor: `${theme.accent}15` }}>
+              <Bell className="w-5 h-5" style={{ color: theme.accent }} />
+              {notificationCount.unread > 0 && (
+                <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 flex items-center justify-center px-1">
+                  {notificationCount.unread > 99 ? '99+' : notificationCount.unread}
+                </div>
+              )}
+            </div>
+            <div className="flex-1">
+              <h3 className="font-medium text-theme-text-primary">Bildirim Geçmişi</h3>
+              <p className="text-sm text-theme-text-secondary">
+                {notificationCount.unread > 0 
+                  ? `${notificationCount.unread} okunmamış bildirim` 
+                  : 'Gönderilen tüm bildirimleri görün'}
+              </p>
             </div>
             <ChevronRight className="w-5 h-5 text-theme-text-secondary" />
           </div>

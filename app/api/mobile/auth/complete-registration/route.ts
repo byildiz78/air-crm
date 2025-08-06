@@ -61,8 +61,7 @@ export async function POST(request: NextRequest) {
         // Find birthday segments
         const birthdaySegments = await prisma.segment.findMany({
           where: {
-            type: 'BIRTHDAY',
-            isActive: true,
+            name: { contains: 'birthday' },
             restaurantId: updatedCustomer.restaurantId
           }
         })

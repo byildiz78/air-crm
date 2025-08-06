@@ -11,7 +11,6 @@ import {
   User, 
   Mail, 
   Phone, 
-  MapPin, 
   Calendar, 
   Star,
   TrendingUp,
@@ -233,12 +232,6 @@ export default function CustomerDetailPage() {
               </div>
             )}
 
-            {customer.address && (
-              <div className="flex items-center gap-2 text-sm">
-                <MapPin className="h-4 w-4 text-gray-400" />
-                <span>{customer.address}</span>
-              </div>
-            )}
 
             <div className="flex items-center gap-2 text-sm">
               <Calendar className="h-4 w-4 text-gray-400" />

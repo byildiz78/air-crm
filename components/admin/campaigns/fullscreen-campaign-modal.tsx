@@ -170,7 +170,7 @@ export function FullscreenCampaignModal({
         const data = await response.json()
         setProducts(data.products || [])
         
-        const uniqueCategories = [...new Set(data.products?.map((p: Product) => p.category) || [])]
+        const uniqueCategories = Array.from(new Set(data.products?.map((p: Product) => p.category).filter(Boolean) || [])) as string[]
         setCategories(uniqueCategories)
       }
     } catch (error) {

@@ -55,7 +55,11 @@ export function CampaignFormStep2({
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
-                onClick={() => setValue('triggerType', trigger.value)}
+                onClick={() => {
+                  console.log('=== TRIGGER TYPE SELECTED ===', trigger.value)
+                  setValue('triggerType', trigger.value)
+                  console.log('=== TRIGGER TYPE SET ===')
+                }}
               >
                 <div className="flex items-center gap-3">
                   <IconComponent className="h-5 w-5 text-gray-600" />
@@ -75,7 +79,9 @@ export function CampaignFormStep2({
             <Label>Minimum Alışveriş Tutarı (₺)</Label>
             <Input
               type="number"
-              {...register('minPurchase', { valueAsNumber: true })}
+              {...register('minPurchase', { 
+                setValueAs: (value) => value === '' || value === null ? undefined : Number(value)
+              })}
               placeholder="100"
               className="mt-1"
             />
@@ -88,7 +94,9 @@ export function CampaignFormStep2({
               <Label>Kaç Adet Alınması Gerekiyor?</Label>
               <Input
                 type="number"
-                {...register('requiredQuantity', { valueAsNumber: true })}
+                {...register('requiredQuantity', { 
+                  setValueAs: (value) => value === '' || value === null ? undefined : Number(value)
+                })}
                 placeholder="3"
                 className="mt-1"
                 min="1"
@@ -98,7 +106,11 @@ export function CampaignFormStep2({
             
             <div>
               <Label>Hangi Ürünlerden?</Label>
-              <Select onValueChange={(value) => addToSelection(value, selectedProducts, setSelectedProducts)}>
+              <Select onValueChange={(value) => {
+                console.log('=== PRODUCT SELECTED IN STEP 2 ===', value)
+                console.log('Current selected products:', selectedProducts)
+                addToSelection(value, selectedProducts, setSelectedProducts)
+              }}>
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Ürün seçin" />
                 </SelectTrigger>
@@ -179,7 +191,9 @@ export function CampaignFormStep2({
             <Label>Kaçıncı Ziyarette?</Label>
             <Input
               type="number"
-              {...register('visitCount', { valueAsNumber: true })}
+              {...register('visitCount', { 
+                setValueAs: (value) => value === '' || value === null ? undefined : Number(value)
+              })}
               placeholder="5"
               className="mt-1"
             />

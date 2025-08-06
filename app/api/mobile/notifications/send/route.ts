@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { authenticateRequest } from '@/lib/auth-utils'
 import { z } from 'zod'
-import webpush from 'web-push'
+import * as webpush from 'web-push'
 
 // Configure web-push with VAPID keys
 try {
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
         title: validatedData.title,
         body: validatedData.body,
         type: validatedData.data?.type || 'GENERAL',
-        targetCustomerIds: targetCustomerIds,
+        targetCustomerIds: JSON.stringify(targetCustomerIds),
         sentCount: successCount,
         failedCount: failureCount,
         webPushResponse: JSON.stringify(results)
