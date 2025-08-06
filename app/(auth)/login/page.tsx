@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { useState, useEffect } from 'react'
+import { signIn, getCsrfToken } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,7 +15,22 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [csrfToken, setCsrfToken] = useState<string | undefined>()
   const router = useRouter()
+
+  useEffect(() => {
+    // Get CSRF token on mount
+    getCsrfToken().then((token) => {
+      console.log('CSRF Token received:', token ? 'Yes' : 'No')
+      setCsrfToken(token)
+    })
+
+    // Check session endpoint
+    fetch('/api/auth/session')
+      .then(res => res.json())
+      .then(data => console.log('Session check:', data))
+      .catch(err => console.error('Session check error:', err))
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,6 +42,7 @@ export default function LoginPage() {
     console.log('Password length:', password.length)
     console.log('Current URL:', window.location.href)
     console.log('NEXTAUTH_URL should be:', window.location.origin)
+    console.log('CSRF Token:', csrfToken ? 'Present' : 'Missing')
 
     try {
       console.log('Calling signIn...')
@@ -34,6 +50,7 @@ export default function LoginPage() {
         email,
         password,
         redirect: false,
+        csrfToken,
       })
 
       console.log('SignIn result:', result)
