@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       // Update cookie with new token
       response.cookies.set('mobile-auth-token', result.newToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // Set to false since we're using HTTP not HTTPS
         sameSite: 'lax',
         maxAge: 30 * 24 * 60 * 60, // 30 days
         path: '/'

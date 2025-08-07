@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       // Set HTTP-only cookie for token
       response.cookies.set('mobile-auth-token', result.token!, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // Set to false since we're using HTTP not HTTPS
         sameSite: 'lax',
         maxAge: 30 * 24 * 60 * 60, // 30 days
         path: '/'
