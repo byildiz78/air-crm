@@ -37,15 +37,67 @@ export default function LoginPage() {
     setIsLoading(true)
     setError('')
 
-    console.log('=== LOGIN ATTEMPT START ===')
+    console.log('=== DETAILED LOGIN DEBUG START ===')
+    console.log('Timestamp:', new Date().toISOString())
     console.log('Email:', email)
     console.log('Password length:', password.length)
     console.log('Current URL:', window.location.href)
-    console.log('NEXTAUTH_URL should be:', window.location.origin)
-    console.log('CSRF Token:', csrfToken ? 'Present' : 'Missing')
+    console.log('Origin:', window.location.origin)
+    console.log('Protocol:', window.location.protocol)
+    console.log('Hostname:', window.location.hostname)
+    console.log('Port:', window.location.port)
+    console.log('CSRF Token:', csrfToken)
+    console.log('Browser:', navigator.userAgent)
 
+    // First, let's check what NextAuth endpoints return
+    console.log('=== Testing NextAuth Endpoints ===')
+    
     try {
-      console.log('Calling signIn...')
+      // Test providers endpoint
+      const providersRes = await fetch('/api/auth/providers')
+      console.log('Providers endpoint status:', providersRes.status)
+      console.log('Providers headers:', Object.fromEntries(providersRes.headers.entries()))
+      const providersText = await providersRes.text()
+      console.log('Providers response (first 200 chars):', providersText.substring(0, 200))
+      
+      // Test session endpoint
+      const sessionRes = await fetch('/api/auth/session')
+      console.log('Session endpoint status:', sessionRes.status)
+      const sessionText = await sessionRes.text()
+      console.log('Session response:', sessionText)
+      
+      // Test CSRF endpoint
+      const csrfRes = await fetch('/api/auth/csrf')
+      console.log('CSRF endpoint status:', csrfRes.status)
+      const csrfText = await csrfRes.text()
+      console.log('CSRF response:', csrfText)
+    } catch (testError) {
+      console.error('Endpoint test error:', testError)
+    }
+
+    console.log('=== Attempting SignIn ===')
+    
+    try {
+      // Try manual API call first
+      console.log('Testing manual API call to /api/auth/callback/credentials')
+      const manualRes = await fetch('/api/auth/callback/credentials', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          csrfToken: csrfToken || ''
+        })
+      })
+      console.log('Manual API call status:', manualRes.status)
+      console.log('Manual API call headers:', Object.fromEntries(manualRes.headers.entries()))
+      const manualText = await manualRes.text()
+      console.log('Manual API response (first 500 chars):', manualText.substring(0, 500))
+
+      // Now try NextAuth signIn
+      console.log('Calling NextAuth signIn...')
       const result = await signIn('credentials', {
         email,
         password,
@@ -53,11 +105,7 @@ export default function LoginPage() {
         callbackUrl: '/admin'
       })
 
-      console.log('SignIn result:', result)
-      console.log('Result error:', result?.error)
-      console.log('Result status:', result?.status)
-      console.log('Result ok:', result?.ok)
-      console.log('Result url:', result?.url)
+      console.log('SignIn result:', JSON.stringify(result, null, 2))
 
       if (result?.error) {
         console.log('Login failed with error:', result.error)
@@ -70,11 +118,19 @@ export default function LoginPage() {
         setError('Beklenmeyen hata oluştu')
       }
     } catch (error) {
-      console.error('Login error caught:', error)
-      console.error('Error message:', error instanceof Error ? error.message : 'Unknown error')
+      console.error('=== LOGIN ERROR DETAILS ===')
+      console.error('Error type:', error?.constructor?.name)
+      console.error('Error message:', error instanceof Error ? error.message : String(error))
       console.error('Error stack:', error instanceof Error ? error.stack : 'No stack')
+      
+      // Try to parse error if it's JSON
+      if (error instanceof Error && error.message.includes('JSON')) {
+        console.error('This appears to be a JSON parse error - server is returning HTML instead of JSON')
+      }
+      
       setError('Bir hata oluştu: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata'))
     } finally {
+      console.log('=== LOGIN DEBUG END ===')
       setIsLoading(false)
     }
   }
