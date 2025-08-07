@@ -110,22 +110,32 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt'
   },
   callbacks: {
-    jwt: async ({ token, user }) => {
+    async jwt({ token, user }) {
       if (user) {
+        token.id = user.id
+        token.email = user.email
+        token.name = user.name
         token.role = user.role
       }
       return token
     },
-    session: async ({ session, token }) => {
-      if (token) {
-        session.user.id = token.sub!
-        session.user.role = token.role
+    async session({ session, token }) {
+      if (token && session.user) {
+        session.user.id = token.sub || (token.id as string)
+        session.user.role = token.role as string
       }
       return session
+    },
+    async redirect({ url, baseUrl }) {
+      // Always return absolute URLs
+      if (url.startsWith('/')) return `${baseUrl}${url}`
+      else if (new URL(url).origin === baseUrl) return url
+      return baseUrl
     }
   },
   pages: {
     signIn: '/login',
-    error: '/login' // Handle errors on login page
+    error: '/login',
+    signOut: '/login'
   }
 }

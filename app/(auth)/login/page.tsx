@@ -107,6 +107,18 @@ export default function LoginPage() {
 
       console.log('SignIn result:', JSON.stringify(result, null, 2))
 
+      // After signIn, check session
+      const sessionCheck = await fetch('/api/auth/session')
+      const sessionData = await sessionCheck.json()
+      console.log('Session after signIn:', sessionData)
+
+      if (sessionData?.user) {
+        console.log('Session exists! User logged in:', sessionData.user)
+        console.log('Redirecting to /admin...')
+        window.location.href = '/admin'
+        return
+      }
+
       if (result?.error) {
         console.log('Login failed with error:', result.error)
         setError('Geçersiz email veya şifre')
