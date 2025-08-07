@@ -29,10 +29,11 @@ export default function LoginPage() {
     fetch('/api/auth/session')
       .then(res => res.json())
       .then(data => {
-        console.log('Session check:', data)
+        console.log('Session check on page load:', data)
         if (data?.user) {
           console.log('User already logged in, redirecting to /admin')
-          router.push('/admin')
+          // Force redirect if already logged in
+          window.location.replace('/admin')
         }
       })
       .catch(err => console.error('Session check error:', err))
@@ -121,7 +122,13 @@ export default function LoginPage() {
       if (sessionData?.user) {
         console.log('Login successful! Session exists:', sessionData.user)
         console.log('Redirecting to /admin...')
-        window.location.href = '/admin'
+        // Try multiple redirect methods
+        try {
+          router.push('/admin')
+        } catch (routerError) {
+          console.log('Router failed, using window.location')
+          window.location.href = '/admin'
+        }
         return
       }
 
