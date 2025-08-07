@@ -25,10 +25,16 @@ export default function LoginPage() {
       setCsrfToken(token)
     })
 
-    // Check session endpoint
+    // Check if user is already logged in
     fetch('/api/auth/session')
       .then(res => res.json())
-      .then(data => console.log('Session check:', data))
+      .then(data => {
+        console.log('Session check:', data)
+        if (data?.user) {
+          console.log('User already logged in, redirecting to /admin')
+          router.push('/admin')
+        }
+      })
       .catch(err => console.error('Session check error:', err))
   }, [])
 
@@ -107,28 +113,21 @@ export default function LoginPage() {
 
       console.log('SignIn result:', JSON.stringify(result, null, 2))
 
-      // After signIn, check session
+      // Since server auth is working, let's check session after signIn attempt
       const sessionCheck = await fetch('/api/auth/session')
       const sessionData = await sessionCheck.json()
-      console.log('Session after signIn:', sessionData)
+      console.log('Session after signIn attempt:', sessionData)
 
       if (sessionData?.user) {
-        console.log('Session exists! User logged in:', sessionData.user)
+        console.log('Login successful! Session exists:', sessionData.user)
         console.log('Redirecting to /admin...')
         window.location.href = '/admin'
         return
       }
 
-      if (result?.error) {
-        console.log('Login failed with error:', result.error)
-        setError('Geçersiz email veya şifre')
-      } else if (result?.ok) {
-        console.log('Login successful, redirecting to /admin')
-        router.push('/admin')
-      } else {
-        console.log('Unexpected result:', result)
-        setError('Beklenmeyen hata oluştu')
-      }
+      // If no session, server auth failed  
+      console.log('No session found after signIn attempt')
+      setError('Geçersiz email veya şifre')
     } catch (error) {
       console.error('=== LOGIN ERROR DETAILS ===')
       console.error('Error type:', error?.constructor?.name)
