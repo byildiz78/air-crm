@@ -51,7 +51,9 @@ export default function RegisterPage() {
 
       if (result.success) {
         toast.success('Kayıt başarıyla tamamlandı!')
-        router.push('/mobile/dashboard')
+        console.log('Registration successful, redirecting to dashboard')
+        window.location.href = '/mobile/dashboard'
+        return
       } else {
         toast.error(result.error || 'Kayıt tamamlanamadı')
       }

@@ -58,13 +58,17 @@ export default function VerifyOTPPage() {
       const data = await response.json()
 
       if (data.success) {
+        console.log('OTP verification successful, redirecting...')
         if (data.isNewCustomer) {
           // New customer - redirect to registration
-          router.push('/mobile/auth/register')
+          console.log('New customer, redirecting to register')
+          window.location.href = '/mobile/auth/register'
         } else {
           // Existing customer - redirect to dashboard
-          router.push('/mobile/dashboard')
+          console.log('Existing customer, redirecting to dashboard')
+          window.location.href = '/mobile/dashboard'
         }
+        return
       } else {
         setError(data.error || 'Doğrulama başarısız')
         setOtp('')
