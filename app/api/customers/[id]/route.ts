@@ -170,8 +170,11 @@ export async function GET(
       }, { status: 401 })
     }
 
-    const customer = await prisma.customer.findUnique({
-      where: { id: params.id },
+    // Check if the ID looks like a phone number (starts with + or contains only digits)
+    const isPhoneNumber = /^[\+]?[0-9\s\-\(\)]+$/.test(params.id)
+    
+    const customer = await prisma.customer.findFirst({
+      where: isPhoneNumber ? { phone: params.id } : { id: params.id },
       include: {
         restaurant: {
           select: { name: true }
@@ -368,8 +371,11 @@ export async function PUT(
     const body = await request.json()
     const validatedData = updateCustomerSchema.parse(body)
 
+    // Check if the ID looks like a phone number
+    const isPhoneNumber = /^[\+]?[0-9\s\-\(\)]+$/.test(params.id)
+
     const customer = await prisma.customer.update({
-      where: { id: params.id },
+      where: isPhoneNumber ? { phone: params.id } : { id: params.id },
       data: {
         ...validatedData,
         birthDate: validatedData.birthDate ? new Date(validatedData.birthDate) : undefined
@@ -404,8 +410,11 @@ export async function DELETE(
       }, { status: 401 })
     }
 
+    // Check if the ID looks like a phone number
+    const isPhoneNumber = /^[\+]?[0-9\s\-\(\)]+$/.test(params.id)
+
     await prisma.customer.delete({
-      where: { id: params.id }
+      where: isPhoneNumber ? { phone: params.id } : { id: params.id }
     })
 
     return NextResponse.json({ message: 'Customer deleted successfully' })

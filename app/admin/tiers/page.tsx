@@ -273,7 +273,7 @@ export default function TiersPage() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tier Yönetimi</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Seviye Yönetimi</h1>
           <p className="text-gray-600">Müşteri seviyelerini yönetin ve koşulları belirleyin</p>
         </div>
         <div className="flex items-center gap-2">

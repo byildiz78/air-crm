@@ -33,6 +33,14 @@ const navigation = [
     href: '/admin/customers', 
     icon: Users
   },
+
+  
+  { 
+    name: 'Ürün Yönetimi', 
+    href: '/admin/products', 
+    icon: Package
+  },
+  
   { 
     name: 'Seviye Yönetimi', 
     href: '/admin/tiers', 
@@ -47,15 +55,15 @@ const navigation = [
     name: 'Kampanyalar', 
     href: '/admin/campaigns', 
     icon: Megaphone
-  },
-  { 
-    name: 'Ürün Yönetimi', 
-    href: '/admin/products', 
-    icon: Package
   }
 ]
 
 const reportsNavigation = [
+  { 
+    name: 'Analiz', 
+    href: '/admin/analytics', 
+    icon: BarChart3
+  },
   { 
     name: 'Satış Kayıtları', 
     href: '/admin/transactions', 

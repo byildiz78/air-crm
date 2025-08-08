@@ -15,7 +15,9 @@
       "Bash(find:*)",
       "Bash(tsx:*)",
       "Bash(npx tsc:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(timeout 30s npm run build)",
+      "Bash(true)"
     ],
     "deny": []
   }
