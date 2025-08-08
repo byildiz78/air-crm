@@ -677,24 +677,26 @@ export function SimpleCampaignModal({
       {/* Compact Footer Navigation */}
       <div className="border-t border-slate-200/60 bg-white/90 backdrop-blur-xl px-6 py-4 shadow-sm flex-shrink-0">
         <div className="max-w-3xl mx-auto flex justify-between items-center">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={prevStep}
-            disabled={currentStep === 1}
-            size="sm"
-            className={`${currentStep === 1 ? 'opacity-50' : ''}`}
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Önceki
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={prevStep}
+              disabled={currentStep === 1}
+              size="sm"
+              className={`${currentStep === 1 ? 'opacity-50' : ''}`}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Önceki
+            </Button>
 
-          <div className="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
-            {currentStep} / 4
+            <div className="text-sm font-medium text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+              {currentStep} / 4
+            </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            {currentStep < 4 ? (
+          <div className="flex items-center space-x-3">
+            {currentStep < 4 && (
               <Button
                 type="button"
                 onClick={nextStep}
@@ -704,12 +706,13 @@ export function SimpleCampaignModal({
                 Sonraki
                 <ArrowRight className="h-4 w-4 ml-1" />
               </Button>
-            ) : (
+            )}
+            {currentStep === 4 && (
               <Button
                 type="submit"
                 disabled={isLoading}
                 size="sm"
-                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 min-w-[120px]"
               >
                 {isLoading ? (
                   <>
@@ -719,7 +722,7 @@ export function SimpleCampaignModal({
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-1" />
-                    Kaydet
+                    {campaign ? 'Güncelle' : 'Kaydet'}
                   </>
                 )}
               </Button>

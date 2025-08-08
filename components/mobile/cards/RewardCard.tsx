@@ -18,8 +18,6 @@ interface RewardCardProps {
   imageUrl?: string
   source?: string
   earnedAt?: string
-  onRedeem?: () => void
-  isRedeeming?: boolean
 }
 
 export function RewardCard({
@@ -35,9 +33,7 @@ export function RewardCard({
   expiresAt,
   imageUrl,
   source,
-  earnedAt,
-  onRedeem,
-  isRedeeming
+  earnedAt
 }: RewardCardProps) {
   const router = useRouter()
   const canAfford = customerPoints >= pointsCost
@@ -135,21 +131,8 @@ export function RewardCard({
                 )}
               </div>
 
-              {/* Redeem Button */}
-              {isAccessible && onRedeem && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onRedeem()
-                  }}
-                  disabled={isRedeeming}
-                  className="px-3 py-1 bg-theme-primary text-white text-xs font-medium rounded-full hover:bg-theme-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isRedeeming ? 'Kullanılıyor...' : 'Kullan'}
-                </button>
-              )}
-              
-              {!onRedeem && isAccessible && (
+              {/* Arrow indicator for navigation */}
+              {isAccessible && (
                 <ChevronRight className="w-4 h-4 text-theme-text-secondary" />
               )}
             </div>

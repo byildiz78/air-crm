@@ -101,28 +101,31 @@ export function StampCollection({ customerId }: StampCollectionProps) {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Section Title */}
-      <div className="flex items-center justify-between px-1 mb-3">
+    <div className="space-y-5">
+      {/* Enhanced Section Title */}
+      <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-3">
-          <div 
-            className="w-1 h-6 rounded-full"
-            style={{ backgroundColor: theme.primary }}
-          />
-          <h2 className="text-xl font-bold text-gray-900">
-            Damgalarım
-          </h2>
+          <div className={`w-2 h-8 rounded-full bg-gradient-to-b ${theme.primary.gradient}`} />
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">
+              ⭐ Damgalarım
+            </h2>
+            <p className="text-sm text-gray-600">
+              {stampData.stamps.length} aktif kampanya
+            </p>
+          </div>
         </div>
         
         {stampData.totalActiveStamps > 0 && (
-          <div className={`px-2 py-1 rounded-full bg-gradient-to-r ${theme.primary.gradient} text-white text-xs font-bold`}>
-            🎉 {stampData.totalActiveStamps} Hazır
+          <div className="flex items-center gap-1 px-3 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm font-bold rounded-full shadow-lg animate-pulse">
+            <Star className="w-4 h-4" fill="currentColor" />
+            {stampData.totalActiveStamps} Hazır!
           </div>
         )}
       </div>
 
-      {/* Stamp Cards */}
-      <div className="space-y-2">
+      {/* Enhanced Stamp Cards */}
+      <div className="space-y-4">
         {stampData.stamps.map((stamp) => (
           <StampCard key={stamp.campaignId} stamp={stamp} />
         ))}

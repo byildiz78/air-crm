@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { TransactionForm } from '@/components/admin/transactions/transaction-form'
+import { TransactionDetailModal } from '@/components/admin/transactions/transaction-detail-modal'
 import { DataTable, Column } from '@/components/ui/data-table'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -120,6 +121,8 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true)
   const [formOpen, setFormOpen] = useState(false)
   const [formLoading, setFormLoading] = useState(false)
+  const [detailModalOpen, setDetailModalOpen] = useState(false)
+  const [selectedTransaction, setSelectedTransaction] = useState<TransactionWithDetails | null>(null)
   
   // Filters
   const [searchValue, setSearchValue] = useState('')
@@ -233,8 +236,8 @@ export default function TransactionsPage() {
   }
 
   const handleView = (transaction: TransactionWithDetails) => {
-    // TODO: Implement transaction detail view
-    console.log('View transaction:', transaction)
+    setSelectedTransaction(transaction)
+    setDetailModalOpen(true)
   }
 
 
@@ -472,6 +475,7 @@ export default function TransactionsPage() {
             columns={columns}
             searchPlaceholder="Sipariş numarası, müşteri adı veya e-posta ara..."
             loading={loading}
+            onRowClick={handleView}
             pagination={{
               page: pagination.page,
               limit: pagination.limit,
@@ -528,6 +532,13 @@ export default function TransactionsPage() {
         onOpenChange={setFormOpen}
         onSubmit={handleCreateTransaction}
         isLoading={formLoading}
+      />
+
+      {/* Transaction Detail Modal */}
+      <TransactionDetailModal
+        open={detailModalOpen}
+        onOpenChange={setDetailModalOpen}
+        transaction={selectedTransaction}
       />
     </div>
   )

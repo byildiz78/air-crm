@@ -45,7 +45,10 @@ export async function GET(request: NextRequest) {
       // Point transaction stats
       totalPointsEarned,
       totalPointsSpent,
-      totalPointsExpired
+      totalPointsExpired,
+      // Today's point stats
+      todayPointsEarned,
+      todayPointsSpent
     ] = await Promise.all([
       // Total customers
       prisma.customer.count(),
@@ -264,6 +267,34 @@ export async function GET(request: NextRequest) {
         _sum: {
           amount: true
         }
+      }),
+
+      // Today's points earned
+      prisma.pointHistory.aggregate({
+        where: {
+          type: 'EARNED',
+          createdAt: {
+            gte: startOfToday,
+            lt: endOfToday
+          }
+        },
+        _sum: {
+          amount: true
+        }
+      }),
+
+      // Today's points spent
+      prisma.pointHistory.aggregate({
+        where: {
+          type: 'SPENT',
+          createdAt: {
+            gte: startOfToday,
+            lt: endOfToday
+          }
+        },
+        _sum: {
+          amount: true
+        }
       })
     ])
 
@@ -363,7 +394,10 @@ export async function GET(request: NextRequest) {
         totalPointsEarned: totalPointsEarned._sum.amount || 0,
         totalPointsSpent: totalPointsSpent._sum.amount || 0,
         totalPointsExpired: totalPointsExpired._sum.amount || 0,
-        netPointBalance
+        netPointBalance,
+        // Today's point stats
+        todayPointsEarned: todayPointsEarned._sum.amount || 0,
+        todayPointsSpent: Math.abs(todayPointsSpent._sum.amount || 0)
       },
       recentActivity: recentTransactions.map(transaction => ({
         id: transaction.id,

@@ -31,7 +31,6 @@ function RewardsContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'affordable' | 'discount' | 'voucher' | 'free_product'>('all')
-  const [redeemingId, setRedeemingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (customer?.id) {
@@ -62,45 +61,6 @@ function RewardsContent() {
     }
   }
 
-  const handleRedeemReward = async (rewardId: string) => {
-    if (!customer?.id) return
-    
-    try {
-      setRedeemingId(rewardId)
-      
-      const response = await fetch('/api/mobile/rewards', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_API_BEARER_TOKEN}`
-        },
-        body: JSON.stringify({
-          customerId: customer.id,
-          rewardId
-        })
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        // Show success message
-        alert(`✅ ${data.message}\nKalan puanınız: ${data.remainingPoints}`)
-        
-        // Refresh rewards list
-        await fetchRewards()
-        
-        // Refresh customer data to update points
-        window.location.reload()
-      } else {
-        alert(`❌ Hata: ${data.error}`)
-      }
-    } catch (error) {
-      console.error('Error redeeming reward:', error)
-      alert('❌ Bir hata oluştu. Lütfen tekrar deneyin.')
-    } finally {
-      setRedeemingId(null)
-    }
-  }
 
   const filteredRewards = rewards.filter(reward => {
     // Search filter
@@ -396,8 +356,6 @@ function RewardsContent() {
               imageUrl={reward.imageUrl}
               source={reward.source}
               earnedAt={reward.earnedAt}
-              onRedeem={() => handleRedeemReward(reward.id)}
-              isRedeeming={redeemingId === reward.id}
             />
           ))}
         </div>

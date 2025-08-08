@@ -84,9 +84,9 @@ export function QuickStatsCard({ stats }: QuickStatsCardProps) {
               </div>
               
               {/* Enhanced Value Display */}
-              <div className="space-y-1">
+              <div className="space-y-2 text-right">
                 <p 
-                  className="text-2xl font-bold leading-none"
+                  className="text-3xl font-black leading-none tracking-tight"
                   style={{ color: stat.color || 'var(--color-primary)' }}
                 >
                   {typeof stat.value === 'number' 
@@ -94,7 +94,7 @@ export function QuickStatsCard({ stats }: QuickStatsCardProps) {
                     : stat.value
                   }
                 </p>
-                <p className="text-xs font-medium text-theme-text-secondary">
+                <p className="text-sm font-semibold text-theme-text-secondary text-right">
                   {stat.label}
                 </p>
               </div>

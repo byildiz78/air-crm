@@ -48,6 +48,8 @@ interface DashboardStats {
   totalPointsSpent: number
   totalPointsExpired: number
   netPointBalance: number
+  todayPointsEarned: number
+  todayPointsSpent: number
 }
 
 interface TopProduct {
@@ -156,20 +158,20 @@ export default function AdminDashboard() {
       bgColor: 'bg-indigo-50'
     },
     {
-      title: 'Toplam Harcanan Puan',
-      value: Math.abs(stats.totalPointsSpent || 0).toLocaleString(),
-      description: `${((Math.abs(stats.totalPointsSpent || 0)) * 0.1).toLocaleString()} ₺ değerinde`,
+      title: 'Bugün Kazandırılan Puan',
+      value: (stats.todayPointsEarned || 0).toLocaleString(),
+      description: `${((stats.todayPointsEarned || 0) * 0.1).toLocaleString()} ₺ değerinde`,
+      icon: Plus,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50'
+    },
+    {
+      title: 'Bugün Kullanılan Puan',
+      value: Math.abs(stats.todayPointsSpent || 0).toLocaleString(),
+      description: `${((Math.abs(stats.todayPointsSpent || 0)) * 0.1).toLocaleString()} ₺ değerinde`,
       icon: Minus,
       color: 'text-red-600',
       bgColor: 'bg-red-50'
-    },
-    {
-      title: 'Toplam Puan Kazanılan',
-      value: (stats.totalPointsEarned || 0).toLocaleString(),
-      description: `${((stats.totalPointsEarned || 0) * 0.1).toLocaleString()} ₺ değerinde`,
-      icon: Star,
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-50'
     },
     {
       title: 'Net Puan Bakiyesi',
@@ -178,6 +180,23 @@ export default function AdminDashboard() {
       icon: TrendingUp,
       color: 'text-cyan-600',
       bgColor: 'bg-cyan-50'
+    },
+    // Row 3 - Point Statistics
+    {
+      title: 'Toplam Kazandırılan Puan',
+      value: (stats.totalPointsEarned || 0).toLocaleString(),
+      description: `${((stats.totalPointsEarned || 0) * 0.1).toLocaleString()} ₺ değerinde`,
+      icon: Star,
+      color: 'text-yellow-600',
+      bgColor: 'bg-yellow-50'
+    },
+    {
+      title: 'Toplam Kullanılan Puan',
+      value: Math.abs(stats.totalPointsSpent || 0).toLocaleString(),
+      description: `${((Math.abs(stats.totalPointsSpent || 0)) * 0.1).toLocaleString()} ₺ değerinde`,
+      icon: Minus,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50'
     }
   ] : []
 

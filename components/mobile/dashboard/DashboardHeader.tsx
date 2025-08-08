@@ -5,15 +5,12 @@ import { useAuth } from '@/lib/mobile/auth-context'
 import { useTheme } from '@/lib/mobile/theme-context'
 import { Bell, BellOff } from 'lucide-react'
 import { ThemedButton } from '@/components/mobile/ui/ThemedButton'
-import { NotificationPermissionDialog } from '@/components/mobile/ui/NotificationPermissionDialog'
-import { webPushService } from '@/lib/mobile/web-push'
-import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 
 export function DashboardHeader() {
   const { customer } = useAuth()
   const { theme } = useTheme()
-  const [showNotificationDialog, setShowNotificationDialog] = useState(false)
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default')
+  const router = useRouter()
 
   const getGreeting = () => {
     const hour = new Date().getHours()
@@ -22,37 +19,8 @@ export function DashboardHeader() {
     return 'İyi akşamlar'
   }
 
-  const handleNotificationClick = async () => {
-    if (!webPushService.isNotificationSupported()) {
-      toast.error('Bu tarayıcı bildirimler desteklemiyor')
-      return
-    }
-
-    const permission = webPushService.getPermissionStatus()
-    setNotificationPermission(permission)
-
-    if (permission === 'granted') {
-      // Already granted, but need to ensure subscription is registered
-      if (customer?.id) {
-        try {
-          console.log('🔔 Permission already granted, initializing...')
-          const initialized = await webPushService.initialize(customer.id)
-          
-          if (initialized) {
-            console.log('📤 Sending test notification...')
-            await webPushService.sendTestNotification(customer.id, 'GENERAL')
-          } else {
-            toast.error('Bildirim kurulumu başarısız oldu')
-          }
-        } catch (error) {
-          console.error('Test notification failed:', error)
-          toast.error('Test bildirimi gönderilemedi')
-        }
-      }
-    } else {
-      // Show permission dialog
-      setShowNotificationDialog(true)
-    }
+  const handleNotificationClick = () => {
+    router.push('/mobile/notifications')
   }
 
   return (
@@ -114,7 +82,7 @@ export function DashboardHeader() {
             </div>
           </div>
 
-          {/* Enhanced Notification Button */}
+          {/* Notification Button - Navigate to notifications page */}
           <div className="flex flex-col items-center space-y-2">
             <ThemedButton
               variant="ghost"
@@ -122,33 +90,16 @@ export function DashboardHeader() {
               className="relative bg-white/20 backdrop-blur-sm border border-white/30 shadow-lg"
               onClick={handleNotificationClick}
             >
-              {notificationPermission === 'granted' ? (
-                <Bell className="w-5 h-5 text-theme-primary" />
-              ) : (
-                <BellOff className="w-5 h-5 text-theme-text-secondary" />
-              )}
-              {notificationPermission === 'default' && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-theme-accent rounded-full animate-pulse border-2 border-white"></span>
-              )}
+              <Bell className="w-5 h-5 text-theme-primary" />
             </ThemedButton>
             
-            {notificationPermission === 'default' && (
-              <span className="text-xs text-theme-text-secondary text-center">
-                Bildirimler
-              </span>
-            )}
+            <span className="text-xs text-theme-text-secondary text-center">
+              Bildirimler
+            </span>
           </div>
         </div>
 
       </div>
-
-      {/* Notification Permission Dialog */}
-      {showNotificationDialog && (
-        <NotificationPermissionDialog 
-          onClose={() => setShowNotificationDialog(false)}
-          autoShow={false}
-        />
-      )}
     </div>
   )
 }

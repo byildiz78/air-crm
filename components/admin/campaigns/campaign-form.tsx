@@ -173,15 +173,15 @@ export function CampaignForm({ open, onOpenChange, campaign, onSubmit, isLoading
           </DialogDescription>
         </DialogHeader>
         
-        <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="basic">Temel Bilgiler</TabsTrigger>
-            <TabsTrigger value="conditions">Koşullar</TabsTrigger>
-            <TabsTrigger value="targeting">Hedefleme</TabsTrigger>
-            <TabsTrigger value="notifications">Bildirimler</TabsTrigger>
-          </TabsList>
-          
-          <form onSubmit={handleSubmit(handleFormSubmit)}>
+        <form onSubmit={handleSubmit(handleFormSubmit)}>
+          <Tabs defaultValue="basic" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="basic">Temel Bilgiler</TabsTrigger>
+              <TabsTrigger value="conditions">Koşullar</TabsTrigger>
+              <TabsTrigger value="targeting">Hedefleme</TabsTrigger>
+              <TabsTrigger value="notifications">Bildirimler</TabsTrigger>
+            </TabsList>
+            
             <TabsContent value="basic" className="space-y-4 mt-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -452,22 +452,22 @@ export function CampaignForm({ open, onOpenChange, campaign, onSubmit, isLoading
                 />
               </div>
             </TabsContent>
+          </Tabs>
 
-            <DialogFooter className="mt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                İptal
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {campaign ? 'Güncelle' : 'Oluştur'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Tabs>
+          <DialogFooter className="mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              İptal
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {campaign ? 'Güncelle' : 'Oluştur'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

@@ -14,6 +14,149 @@ const updateCustomerSchema = z.object({
   level: z.enum(['REGULAR', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM']).optional()
 })
 
+// Calculate customer stamp entitlements for free products
+async function calculateStampEntitlements(customerId: string, restaurantId: string) {
+  // Get all active Buy X Get Y campaigns with free products for this restaurant
+  const campaigns = await prisma.campaign.findMany({
+    where: {
+      restaurantId: restaurantId,
+      isActive: true,
+      type: 'PRODUCT_BASED',
+      buyQuantity: { not: null },
+      freeProducts: { not: null }, // Only campaigns with free products
+      AND: [
+        { startDate: { lte: new Date() } },
+        { endDate: { gte: new Date() } }
+      ]
+    },
+    select: {
+      id: true,
+      name: true,
+      buyQuantity: true,
+      getQuantity: true,
+      targetProducts: true,
+      targetCategories: true,
+      freeProducts: true,
+      discountValue: true,
+      discountType: true,
+      maxUsagePerCustomer: true,
+      startDate: true
+    }
+  })
+
+  const entitlements = []
+
+  for (const campaign of campaigns) {
+    let targetProductIds: string[] = []
+    let freeProductIds: string[] = []
+    
+    // Parse target products
+    if (campaign.targetProducts) {
+      try {
+        targetProductIds = JSON.parse(campaign.targetProducts)
+      } catch (e) {
+        targetProductIds = []
+      }
+    }
+
+    // Parse free products
+    if (campaign.freeProducts) {
+      try {
+        freeProductIds = JSON.parse(campaign.freeProducts)
+      } catch (e) {
+        freeProductIds = []
+      }
+    }
+
+    if (freeProductIds.length === 0) continue
+
+    // Get customer's transactions that qualify for this campaign
+    const qualifyingTransactions = await prisma.transactionItem.findMany({
+      where: {
+        transaction: {
+          customerId: customerId,
+          status: 'COMPLETED',
+          createdAt: {
+            gte: campaign.startDate || new Date(0)
+          }
+        },
+        ...(targetProductIds.length > 0 && {
+          productId: { in: targetProductIds }
+        })
+      },
+      select: {
+        quantity: true,
+        transaction: {
+          select: {
+            id: true,
+            createdAt: true
+          }
+        }
+      }
+    })
+
+    // Calculate total quantity purchased
+    const totalPurchased = qualifyingTransactions.reduce((sum, item) => sum + item.quantity, 0)
+    
+    // Calculate stamps earned (how many complete sets of buyQuantity)
+    const stampsEarned = Math.floor(totalPurchased / (campaign.buyQuantity || 1))
+    
+    // Get how many times this campaign was already used
+    const campaignUsages = await prisma.transactionCampaign.count({
+      where: {
+        campaignId: campaign.id,
+        transaction: {
+          customerId: customerId
+        }
+      }
+    })
+
+    // Calculate remaining stamps
+    const stampsUsed = campaignUsages
+    const stampsAvailable = Math.max(0, stampsEarned - stampsUsed)
+    
+    // Get product details for free products
+    const freeProducts = await prisma.product.findMany({
+      where: {
+        id: { in: freeProductIds },
+        isActive: true
+      },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        category: true
+      }
+    })
+
+    if (stampsAvailable > 0 && freeProducts.length > 0) {
+      // Calculate total free items available
+      const getQuantity = campaign.getQuantity || 1
+      const totalFreeItems = stampsAvailable * getQuantity
+
+      entitlements.push({
+        campaignId: campaign.id,
+        campaignName: campaign.name,
+        stampsAvailable,
+        totalFreeItems,
+        freeProducts: freeProducts.map(product => ({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          category: product.category,
+          availableQuantity: totalFreeItems // Each stamp gives access to getQuantity free items
+        }))
+      })
+    }
+  }
+
+  return {
+    entitlements,
+    totalAvailableStamps: entitlements.reduce((sum, ent) => sum + ent.stampsAvailable, 0),
+    totalFreeItems: entitlements.reduce((sum, ent) => sum + ent.totalFreeItems, 0)
+  }
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -170,6 +313,9 @@ export async function GET(
       return true
     })
 
+    // Get customer stamp progress and free product entitlements
+    const stampEntitlements = await calculateStampEntitlements(customer.id, customer.restaurantId)
+
     // Calculate customer statistics
     const stats = {
       totalSpent: customer.totalSpent,
@@ -197,6 +343,7 @@ export async function GET(
     return NextResponse.json({ 
       customer,
       availableCampaigns,
+      stampEntitlements,
       stats
     })
   } catch (error) {

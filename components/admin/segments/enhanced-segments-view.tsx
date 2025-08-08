@@ -281,8 +281,8 @@ export function EnhancedSegmentsView({
           {filteredSegments.map((segment) => (
             <Card 
               key={segment.id} 
-              className={`hover:shadow-lg transition-all cursor-pointer border-2 ${getSegmentColor(segment)}`}
-              onClick={() => onView(segment)}
+              className={`hover:shadow-lg transition-all ${viewMode === 'grid' ? 'cursor-pointer' : ''} border-2 ${getSegmentColor(segment)}`}
+              onClick={viewMode === 'grid' ? () => onView(segment) : undefined}
             >
               {viewMode === 'grid' ? (
                 <CardContent className="p-0">
@@ -423,7 +423,10 @@ export function EnhancedSegmentsView({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => onView(segment)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onView(segment)
+                        }}
                         className="h-8 px-2 text-xs hover:bg-blue-50"
                       >
                         <Eye className="h-3 w-3" />
@@ -431,7 +434,10 @@ export function EnhancedSegmentsView({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => onEdit(segment)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onEdit(segment)
+                        }}
                         className="h-8 px-2 text-xs hover:bg-green-50"
                       >
                         <Edit className="h-3 w-3" />
@@ -440,7 +446,10 @@ export function EnhancedSegmentsView({
                         <Button
                           variant="default"
                           size="sm"
-                          onClick={() => onManageCustomers(segment)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onManageCustomers(segment)
+                          }}
                           className="h-8 px-3 text-xs bg-purple-600 hover:bg-purple-700 text-white font-medium"
                         >
                           <UserPlus className="h-3 w-3 mr-1" />
@@ -450,7 +459,10 @@ export function EnhancedSegmentsView({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => onRefresh(segment)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onRefresh(segment)
+                          }}
                           className="h-8 px-2 text-xs text-amber-600 hover:bg-amber-50"
                         >
                           <RefreshCw className="h-3 w-3" />
@@ -459,7 +471,10 @@ export function EnhancedSegmentsView({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => onDelete(segment)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onDelete(segment)
+                        }}
                         className="h-8 px-2 text-xs text-red-600 hover:bg-red-50"
                       >
                         <Trash2 className="h-3 w-3" />

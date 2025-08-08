@@ -23,8 +23,43 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // Mock data for now until database is properly migrated
-    const mockNotifications = [
+    // Fetch notifications from database that were sent to this customer
+    const notifications = await prisma.notificationLog.findMany({
+      where: {
+        targetCustomerIds: {
+          contains: customerId
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      skip,
+      take: limit
+    })
+
+    // Get total count for pagination
+    const totalCount = await prisma.notificationLog.count({
+      where: {
+        targetCustomerIds: {
+          contains: customerId
+        }
+      }
+    })
+
+    // Transform data to match expected format
+    const transformedNotifications = notifications.map(notification => ({
+      id: notification.id,
+      title: notification.title,
+      message: notification.body,
+      body: notification.body,
+      type: notification.type,
+      status: 'DELIVERED',
+      createdAt: notification.createdAt.toISOString(),
+      data: null
+    }))
+
+    // Fallback to mock data if no notifications found (for demo purposes)
+    const mockNotifications = totalCount === 0 ? [
       {
         id: '1',
         title: '🎉 Yeni Kampanya!',
@@ -75,14 +110,14 @@ export async function GET(request: NextRequest) {
         createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
         data: { discountPercent: 20 }
       }
-    ]
+    ] : []
 
-    // Filter based on pagination
-    const paginatedNotifications = mockNotifications.slice(skip, skip + limit)
-    const total = mockNotifications.length
+    // Use real data if available, otherwise fallback to mock data
+    const finalNotifications = transformedNotifications.length > 0 ? transformedNotifications : mockNotifications
+    const total = totalCount > 0 ? totalCount : mockNotifications.length
 
     return NextResponse.json({
-      notifications: paginatedNotifications,
+      notifications: finalNotifications,
       pagination: {
         page,
         limit,

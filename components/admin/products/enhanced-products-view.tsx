@@ -133,7 +133,7 @@ export function EnhancedProductsView({
   totalPages,
   onPageChange
 }: EnhancedProductsViewProps) {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
 
   const formatPrice = (price: number) => {
     return price.toLocaleString('tr-TR', {

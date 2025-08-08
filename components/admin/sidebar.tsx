@@ -18,7 +18,8 @@ import {
   TrendingUp,
   Crown,
   Palette,
-  MessageSquare
+  MessageSquare,
+  BarChart3
 } from 'lucide-react'
 
 const navigation = [
@@ -32,7 +33,6 @@ const navigation = [
     href: '/admin/customers', 
     icon: Users
   },
-  
   { 
     name: 'Seviye Yönetimi', 
     href: '/admin/tiers', 
@@ -52,7 +52,10 @@ const navigation = [
     name: 'Ürün Yönetimi', 
     href: '/admin/products', 
     icon: Package
-  },
+  }
+]
+
+const reportsNavigation = [
   { 
     name: 'Satış Kayıtları', 
     href: '/admin/transactions', 
@@ -155,6 +158,44 @@ export function AdminSidebar() {
               </Link>
             )
           })}
+        </div>
+
+        {/* Reports Section */}
+        <div className="mt-6">
+          <div className="mb-2">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3">
+              RAPORLAR
+            </p>
+          </div>
+          
+          <div className="space-y-1">
+            {reportsNavigation.map((item) => {
+              const isActive = pathname === item.href
+              
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    'group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200',
+                    isActive
+                      ? 'bg-orange-500 text-white shadow-sm'
+                      : 'text-gray-700 hover:bg-orange-50 hover:text-orange-700'
+                  )}
+                >
+                  <item.icon
+                    className={cn(
+                      'mr-3 h-5 w-5 flex-shrink-0',
+                      isActive 
+                        ? 'text-white' 
+                        : 'text-gray-500 group-hover:text-orange-600'
+                    )}
+                  />
+                  {item.name}
+                </Link>
+              )
+            })}
+          </div>
         </div>
       </nav>
 
