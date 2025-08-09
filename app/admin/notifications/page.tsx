@@ -256,8 +256,7 @@ export default function NotificationsPage() {
   }
   
   const getTargetCount = (): number => {
-    const filtered = getFilteredCustomers()
-    return filtered.length > 0 ? filtered.length : getRealTargetCount()
+    return getRealTargetCount()
   }
 
   const handleSendNotification = async () => {
@@ -266,14 +265,50 @@ export default function NotificationsPage() {
       return
     }
 
-    const targetCustomers = getFilteredCustomers()
-    if (targetCustomers.length === 0) {
+    const targetCount = getTargetCount()
+    if (targetCount === 0) {
       toast.error('Hedef müşteri seçmelisiniz')
       return
     }
 
     setSending(true)
     try {
+      // Get target customer IDs based on filters
+      let targetCustomerIds: string[] = []
+      
+      if (form.filters.targetType === 'all') {
+        // Get all customer IDs
+        const customersResponse = await fetch('/api/admin/customers')
+        if (customersResponse.ok) {
+          const allCustomers = await customersResponse.json()
+          targetCustomerIds = allCustomers.map((c: any) => c.id)
+        }
+      } else if (form.filters.targetType === 'segment' && form.filters.segments.length > 0) {
+        // Get customers by segments
+        const customersResponse = await fetch('/api/admin/customers')
+        if (customersResponse.ok) {
+          const allCustomers = await customersResponse.json()
+          targetCustomerIds = allCustomers
+            .filter((c: any) => form.filters.segments.includes(c.segment))
+            .map((c: any) => c.id)
+        }
+      } else if (form.filters.targetType === 'tier' && form.filters.tiers.length > 0) {
+        // Get customers by tiers
+        const customersResponse = await fetch('/api/admin/customers')
+        if (customersResponse.ok) {
+          const allCustomers = await customersResponse.json()
+          targetCustomerIds = allCustomers
+            .filter((c: any) => form.filters.tiers.includes(c.loyaltyTier))
+            .map((c: any) => c.id)
+        }
+      }
+
+      if (targetCustomerIds.length === 0) {
+        toast.error('Hedef müşteri bulunamadı')
+        setSending(false)
+        return
+      }
+
       const response = await fetch('/api/admin/notifications/send', {
         method: 'POST',
         headers: {
@@ -283,7 +318,7 @@ export default function NotificationsPage() {
           title: form.title,
           body: form.body,
           type: form.type,
-          targetCustomerIds: targetCustomers.map(c => c.id)
+          targetCustomerIds: targetCustomerIds
         })
       })
 
@@ -354,7 +389,7 @@ export default function NotificationsPage() {
               Yeni Bildirim
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+          <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-3 text-2xl">
                 <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg">
@@ -367,7 +402,7 @@ export default function NotificationsPage() {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="flex gap-6 h-[calc(90vh-150px)]">
+            <div className="flex gap-6 flex-1 overflow-hidden">
               {/* Sol Panel - Form */}
               <div className="w-2/3 space-y-6 overflow-y-auto pr-4">
                 {/* Bildirim İçeriği */}
@@ -684,7 +719,7 @@ export default function NotificationsPage() {
             </div>
 
             {/* Alt Butonlar */}
-            <div className="flex justify-between items-center pt-6 border-t bg-gradient-to-r from-gray-50 to-blue-50 -mx-6 px-6 -mb-6 pb-6">
+            <div className="flex justify-between items-center pt-4 mt-4 border-t bg-gradient-to-r from-gray-50 to-blue-50">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Bell className="h-4 w-4" />
                 <span>Bildirim {getTargetCount()} müşteriye gönderilecek</span>
