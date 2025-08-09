@@ -46,7 +46,7 @@ export default function MobileLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className={`${inter.className} bg-gray-50 min-h-screen antialiased`}>
+    <div className="bg-gray-50 min-h-screen antialiased font-inter">
       <SkipLink />
       <GlobalErrorHandler>
         <AccessibilityProvider>

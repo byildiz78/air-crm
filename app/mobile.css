@@ -1,9 +1,9 @@
 /* Mobile-only CSS - Completely isolated from admin */
 
-/* Import Tailwind for mobile only */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind is already imported in globals.css, no need to re-import */
+/* @tailwind base; */
+/* @tailwind components; */
+/* @tailwind utilities; */
 
 /* Mobile-specific root variables */
 :root {
@@ -28,7 +28,7 @@
   --color-text-primary: var(--mobile-color-text-primary);
   --color-text-secondary: var(--mobile-color-text-secondary);
   
-  font-family: var(--font-family, Inter, system-ui, sans-serif);
+  font-family: Inter, system-ui, sans-serif;
   isolation: isolate;
   position: relative;
   z-index: 1;

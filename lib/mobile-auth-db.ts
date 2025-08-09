@@ -163,7 +163,7 @@ export async function verifyOTPDB(phone: string, otp: string): Promise<{
         data: {
           phone: cleanPhone,
           name: '', // Will be filled during registration
-          email: '', // Will be filled during registration  
+          email: `temp_${cleanPhone}_${Date.now()}@temp.local`, // Temporary unique email
           restaurantId: DEFAULT_RESTAURANT_ID,
           points: 0,
           level: 'REGULAR',

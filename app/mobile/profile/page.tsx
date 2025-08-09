@@ -381,8 +381,8 @@ function ProfileContent() {
       </ThemedCard>
 
       {/* App Version */}
-      <div className="text-center text-xs text-theme-text-disabled">
-        Air CRM Mobile v1.0.0
+      <div className="text-center text-xs text-theme-text-enabled">
+        robotPOS Air CRM Mobile v1.0.5
       </div>
     </div>
   )
