@@ -402,8 +402,15 @@ export default function TiersPage() {
                         {tier.description || 'Açıklama yok'}
                       </p>
                       
-                      <div className="text-xs text-gray-500">
-                        <strong>Koşullar:</strong> {formatRequirements(tier)}
+                      <div className="text-xs text-gray-500 space-y-1">
+                        <div>
+                          <strong>Koşullar:</strong> {formatRequirements(tier)}
+                        </div>
+                        {tier.specialFeatures && (
+                          <div>
+                            <strong>Özel Avantajlar:</strong> {tier.specialFeatures.length > 80 ? tier.specialFeatures.substring(0, 80) + '...' : tier.specialFeatures}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -603,6 +610,17 @@ export default function TiersPage() {
                   />
                   <p className="text-xs text-gray-500">Varsayılan indirim</p>
                 </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Özel Avantajlar</Label>
+                <textarea
+                  {...register('specialFeatures')}
+                  className="w-full min-h-[80px] px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                  placeholder="Bu seviyeye özel avantajları listeleyin... Örn:&#10;• Ücretsiz kargo&#10;• VIP müşteri hizmetleri&#10;• Özel etkinliklere davet"
+                  rows={3}
+                />
+                <p className="text-xs text-gray-500">Her satıra bir avantaj yazın. Müşteri uygulamasında görüntülenecektir.</p>
               </div>
             </div>
 

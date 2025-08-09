@@ -1,12 +1,15 @@
 'use client'
 
+import { useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { Bell, Search } from 'lucide-react'
+import { Bell, Search, Star } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { FeaturesModal } from '@/components/admin/features-modal'
 
 export function AdminHeader() {
   const { data: session } = useSession()
+  const [featuresModalOpen, setFeaturesModalOpen] = useState(false)
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
@@ -21,6 +24,16 @@ export function AdminHeader() {
       </div>
       
       <div className="flex items-center space-x-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative text-gray-500 hover:text-purple-600 hover:bg-purple-50"
+          onClick={() => setFeaturesModalOpen(true)}
+          title="Sistem Özellikleri"
+        >
+          <Star className="h-5 w-5" />
+        </Button>
+        
         <Button
           variant="ghost"
           size="icon"
@@ -39,6 +52,11 @@ export function AdminHeader() {
           </p>
         </div>
       </div>
+      
+      <FeaturesModal 
+        isOpen={featuresModalOpen}
+        onClose={() => setFeaturesModalOpen(false)}
+      />
     </header>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -45,8 +45,7 @@ const customerSchema = z.object({
   name: z.string().min(2, 'İsim en az 2 karakter olmalıdır'),
   email: z.string().email('Geçerli bir email adresi giriniz'),
   phone: z.string().optional(),
-  birthDate: z.string().optional(),
-  level: z.enum(['REGULAR', 'BRONZE', 'SILVER', 'GOLD', 'PLATINUM']).optional()
+  birthDate: z.string().optional()
 })
 
 type CustomerFormData = z.infer<typeof customerSchema>
@@ -116,18 +115,38 @@ export function CustomerForm({ open, onOpenChange, customer, onSubmit, isLoading
       name: customer?.name || '',
       email: customer?.email || '',
       phone: customer?.phone || '',
-      birthDate: customer?.birthDate ? (customer.birthDate instanceof Date ? customer.birthDate.toISOString().split('T')[0] : customer.birthDate.split('T')[0]) : '',
-      level: customer?.level || 'REGULAR'
+      birthDate: customer?.birthDate ? (customer.birthDate instanceof Date ? customer.birthDate.toISOString().split('T')[0] : customer.birthDate.split('T')[0]) : ''
     }
   })
 
-  const selectedLevel = watch('level')
+  const selectedLevel = customer?.level || 'REGULAR'
   const selectedLevelData = levelOptions.find(opt => opt.value === selectedLevel)
   const watchedName = watch('name')
 
+  // Update form when customer changes
+  useEffect(() => {
+    if (customer) {
+      reset({
+        name: customer.name || '',
+        email: customer.email || '',
+        phone: customer.phone || '',
+        birthDate: customer.birthDate ? (customer.birthDate instanceof Date ? customer.birthDate.toISOString().split('T')[0] : customer.birthDate.split('T')[0]) : ''
+      })
+    } else {
+      reset({
+        name: '',
+        email: '',
+        phone: '',
+        birthDate: ''
+      })
+    }
+  }, [customer, reset])
+
   const handleFormSubmit = async (data: CustomerFormData) => {
     await onSubmit(data)
-    reset()
+    if (!customer) {
+      reset()
+    }
   }
 
   return (
@@ -236,7 +255,7 @@ export function CustomerForm({ open, onOpenChange, customer, onSubmit, isLoading
             </CardContent>
           </Card>
 
-          {/* Müşteri Seviyesi */}
+          {/* Müşteri Seviyesi - Read Only */}
           {customer && (
             <Card>
               <CardHeader>
@@ -245,45 +264,29 @@ export function CustomerForm({ open, onOpenChange, customer, onSubmit, isLoading
                   Müşteri Seviyesi
                 </CardTitle>
                 <CardDescription>
-                  Müşterinin seviye bilgisini seçin
+                  Müşteri seviyesi otomatik olarak belirlenir
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="level" className="flex items-center gap-2">
                     <Star className="h-4 w-4 text-gray-500" />
-                    Seviye
+                    Mevcut Seviye
                   </Label>
-                  <Select
-                    value={selectedLevel}
-                    onValueChange={(value) => setValue('level', value as CustomerLevel)}
-                  >
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Seviye seçin">
-                        {selectedLevelData && (
-                          <div className="flex items-center gap-2">
-                            {React.createElement(selectedLevelData.icon, { className: "h-4 w-4" })}
-                            <span>{selectedLevelData.label}</span>
-                          </div>
-                        )}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {levelOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          <div className="flex items-center gap-3">
-                            <div className={`p-1.5 rounded-md bg-gradient-to-r ${option.gradient}`}>
-                              {React.createElement(option.icon, { className: "h-3 w-3 text-white" })}
-                            </div>
-                            <div>
-                              <div className="font-medium">{option.label}</div>
-                              <div className="text-xs text-gray-500">{option.description}</div>
-                            </div>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="h-11 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md flex items-center justify-between">
+                    {selectedLevelData && (
+                      <div className="flex items-center gap-2">
+                        {React.createElement(selectedLevelData.icon, { className: "h-4 w-4" })}
+                        <span>{selectedLevelData.label}</span>
+                        <Badge className={`ml-2 ${selectedLevelData.color}`}>
+                          Otomatik
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Müşteri seviyesi, harcama miktarı ve ziyaret sayısına göre otomatik olarak güncellenir.
+                  </p>
                 </div>
 
                 {/* Customer Stats */}
